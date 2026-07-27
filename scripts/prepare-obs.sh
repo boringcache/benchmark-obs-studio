@@ -81,6 +81,7 @@ sudo xcode-select --switch "$OBS_XCODE_PATH"
     -DOBS_VERSION_OVERRIDE:STRING="$OBS_VERSION_OVERRIDE"
     -DCMAKE_OSX_ARCHITECTURES:STRING=arm64
     -DCMAKE_COMPILE_WARNING_AS_ERROR:BOOL=ON
+    -DCMAKE_XCODE_GENERATE_SCHEME:BOOL=ON
   )
 
   if [[ "$strategy" == "actions-cache" ]]; then

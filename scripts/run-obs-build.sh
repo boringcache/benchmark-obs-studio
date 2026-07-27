@@ -16,6 +16,9 @@ if [[ -z "$log_path" ]]; then
 fi
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+if [[ "$log_path" != /* ]]; then
+  log_path="$root/$log_path"
+fi
 mkdir -p "$(dirname "$log_path")"
 
 if [[ "$surface" == "ccache" ]]; then
@@ -37,7 +40,7 @@ fi
   xcodebuild \
     ONLY_ACTIVE_ARCH=NO \
     -project obs-studio.xcodeproj \
-    -target obs-studio \
+    -scheme obs-studio \
     -destination "generic/platform=macOS,name=Any Mac" \
     -configuration RelWithDebInfo \
     -parallelizeTargets \

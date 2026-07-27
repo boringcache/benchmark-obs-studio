@@ -166,6 +166,15 @@ class SourcePreparationTest(unittest.TestCase):
         self.assertEqual(prepare.count("-DOBS_VERSION_OVERRIDE:STRING"), 2)
         self.assertIn('source "$root/benchmark-source.env"', prepare)
 
+    def test_xcode_build_uses_a_generated_scheme_and_absolute_log_path(self):
+        prepare = (ROOT / "scripts" / "prepare-obs.sh").read_text()
+        build = (ROOT / "scripts" / "run-obs-build.sh").read_text()
+
+        self.assertIn("-DCMAKE_XCODE_GENERATE_SCHEME:BOOL=ON", prepare)
+        self.assertIn("-scheme obs-studio", build)
+        self.assertNotIn("\n    -target obs-studio", build)
+        self.assertIn('log_path="$root/$log_path"', build)
+
 
 if __name__ == "__main__":
     unittest.main()
