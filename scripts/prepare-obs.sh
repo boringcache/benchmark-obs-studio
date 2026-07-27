@@ -12,7 +12,17 @@ case "$surface:$strategy" in
 esac
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# The pinned source pair intentionally uses an untagged parent commit. OBS's
+# version helper otherwise falls back to the abbreviated SHA, which is not a
+# valid CMake project version.
+# shellcheck disable=SC1091
+source "$root/benchmark-source.env"
 upstream="$root/upstream"
+
+if [[ ! "${OBS_VERSION_OVERRIDE:-}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-(rc|beta)[0-9]+)?$ ]]; then
+  echo "OBS_VERSION_OVERRIDE must be a pinned OBS semantic version." >&2
+  exit 1
+fi
 
 if [[ "$surface" == "ccache" ]]; then
   if [[ "$(uname -s)" != "Linux" ]]; then
@@ -44,6 +54,7 @@ if [[ "$surface" == "ccache" ]]; then
     fi
 
     cmake -S . --preset ubuntu-ci \
+      -DOBS_VERSION_OVERRIDE:STRING="$OBS_VERSION_OVERRIDE" \
       -DENABLE_BROWSER:BOOL=ON \
       -DCEF_ROOT_DIR:PATH="$PWD/$cef_root" \
       -DCMAKE_C_COMPILER_LAUNCHER:FILEPATH=ccache \
@@ -67,6 +78,7 @@ sudo xcode-select --switch "$OBS_XCODE_PATH"
   cmake_args=(
     -S .
     --preset macos
+    -DOBS_VERSION_OVERRIDE:STRING="$OBS_VERSION_OVERRIDE"
     -DCMAKE_OSX_ARCHITECTURES:STRING=arm64
     -DCMAKE_COMPILE_WARNING_AS_ERROR:BOOL=ON
   )

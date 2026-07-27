@@ -157,5 +157,15 @@ class WorkflowTemplateTest(unittest.TestCase):
             write_result.validate_product_refs("v1", "v1.14.0", "v1.14.0")
 
 
+class SourcePreparationTest(unittest.TestCase):
+    def test_pins_a_semantic_obs_version_for_both_providers(self):
+        source = (ROOT / "benchmark-source.env").read_text()
+        prepare = (ROOT / "scripts" / "prepare-obs.sh").read_text()
+
+        self.assertIn("OBS_VERSION_OVERRIDE=32.2.0-rc2", source)
+        self.assertEqual(prepare.count("-DOBS_VERSION_OVERRIDE:STRING"), 2)
+        self.assertIn('source "$root/benchmark-source.env"', prepare)
+
+
 if __name__ == "__main__":
     unittest.main()

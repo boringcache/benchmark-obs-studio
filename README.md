@@ -37,12 +37,14 @@ also requires native evidence before accepting a BoringCache result:
 [`benchmark-source.env`](benchmark-source.env) pins this parent/child pair:
 
 - base: `6750a6e9f5248bbefbc67adb49fb819e6611e284`
-- head: `f730063da39f2e6338629f526acb99c8d574ffa1`
+- head: `f730063da39f2e6338629f526acb99c8d574ffa1` (`32.2.0-rc2`)
 - change: a real adjustment to the Add Source frontend, including
   `frontend/dialogs/OBSBasicSourceSelect.cpp`
 
 `prepare-source.sh` verifies the parent relationship before either build and
 updates OBS's recursive submodules at the selected commit.
+`benchmark-source.env` also pins the semantic OBS build version so the
+untagged parent and tagged child use the same valid CMake version metadata.
 
 ## Comparison shape
 
