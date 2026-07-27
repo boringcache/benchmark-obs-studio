@@ -130,6 +130,20 @@ class ComparisonTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "missing benchmark results"):
                 render.load_results(Path(directory))
 
+    def test_ignores_raw_native_evidence_next_to_phase_results(self):
+        with tempfile.TemporaryDirectory() as directory:
+            input_dir = Path(directory)
+            expected = self.results()
+            for (surface, strategy, phase), payload in expected.items():
+                (input_dir / f"{surface}-{strategy}-{phase}.json").write_text(
+                    json.dumps(payload)
+                )
+            (input_dir / "ccache-actions-cache-base-native.json").write_text(
+                json.dumps({"cache_miss": 560})
+            )
+
+            self.assertEqual(render.load_results(input_dir), expected)
+
 
 class WorkflowTemplateTest(unittest.TestCase):
     def test_boringcache_template_uses_current_adapter_contract(self):

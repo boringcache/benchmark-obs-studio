@@ -38,15 +38,20 @@ def validate_result(payload: dict[str, Any], path: Path) -> None:
 
 def load_results(input_dir: Path) -> dict[tuple[str, str, str], dict[str, Any]]:
     results: dict[tuple[str, str, str], dict[str, Any]] = {}
-    for path in sorted(input_dir.glob("*.json")):
+    missing: list[tuple[str, str, str]] = []
+    for key in sorted(EXPECTED_RESULTS):
+        surface, strategy, phase = key
+        path = input_dir / f"{surface}-{strategy}-{phase}.json"
+        if not path.is_file():
+            missing.append(key)
+            continue
         payload = json.loads(path.read_text())
         validate_result(payload, path)
-        key = (payload["surface"], payload["strategy"], payload["phase"])
-        if key in results:
-            raise ValueError(f"duplicate benchmark result for {key}: {path}")
+        actual_key = (payload["surface"], payload["strategy"], payload["phase"])
+        if actual_key != key:
+            raise ValueError(f"benchmark result identity mismatch in {path}: {actual_key}")
         results[key] = payload
 
-    missing = EXPECTED_RESULTS - results.keys()
     if missing:
         labels = ", ".join("/".join(key) for key in sorted(missing))
         raise ValueError(f"missing benchmark results: {labels}")
