@@ -1,0 +1,48 @@
+name: "OBS Studio compiler-cache proof"
+
+on:
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  actions-cache:
+    name: Actions Cache baseline
+    uses: ./.github/workflows/obs-actions-cache.yml
+    secrets: inherit
+
+  boringcache:
+    name: BoringCache candidate
+    uses: ./.github/workflows/obs-boringcache.yml
+    secrets: inherit
+
+  compare:
+    name: Compare all results
+    needs: [actions-cache, boringcache]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout benchmark repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Download phase results
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          pattern: phase-obs-studio-compiler-cache-*
+          path: benchmark-phases
+          merge-multiple: true
+
+      - name: Render comparison
+        run: ./scripts/render_comparison.py --input-dir benchmark-phases --output-dir benchmark-results
+
+      - name: Publish job summary
+        run: cat benchmark-results/comparison.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload comparison
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: benchmark-obs-studio-compiler-cache-comparison
+          path: benchmark-results
+          if-no-files-found: error
+          retention-days: 30
