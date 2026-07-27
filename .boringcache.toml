@@ -1,0 +1,14 @@
+workspace = "boringcache/benchmark-obs-studio"
+
+# The activation script scopes both tags to one workflow run before the Action
+# starts. Platform suffixes remain enabled so Linux ccache and macOS Xcode
+# cohorts cannot collide.
+[adapters.ccache]
+tag = "obs-studio-ccache"
+no-git = true
+metadata-hints = ["benchmark=obs-studio-compiler-cache", "tool=ccache"]
+
+[adapters.xcode]
+tag = "obs-studio-xcode"
+no-git = true
+metadata-hints = ["benchmark=obs-studio-compiler-cache", "tool=xcode"]
