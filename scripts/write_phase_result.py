@@ -95,11 +95,16 @@ def xcode_summary(payload: dict[str, Any] | None) -> dict[str, Any] | None:
             "action_misses",
             "action_errors",
             "actions_published",
+            "actions_warmed",
             "objects_fetched",
+            "objects_materialized",
             "objects_published",
+            "objects_warmed",
             "bytes_fetched",
             "bytes_published",
             "publications_failed",
+            "warmup_bytes",
+            "warmup_failures",
         )
     }
 

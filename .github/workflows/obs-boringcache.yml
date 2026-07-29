@@ -2,6 +2,17 @@ name: "OBS Studio proof - BoringCache"
 
 on:
   workflow_call:
+    inputs:
+      source_run_id:
+        description: "Optional proof run whose Xcode cache cohort should be reused"
+        required: false
+        default: ""
+        type: string
+      source_run_attempt:
+        description: "Attempt number that created the source Xcode cache cohort"
+        required: false
+        default: "1"
+        type: string
 
 permissions:
   actions: read
@@ -16,6 +27,7 @@ env:
 jobs:
   ccache-base:
     name: ccache / base
+    if: inputs.source_run_id == ''
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     env:
@@ -219,6 +231,7 @@ jobs:
 
   xcode-base:
     name: Xcode / base
+    if: inputs.source_run_id == ''
     runs-on: macos-26
     timeout-minutes: 120
     steps:
@@ -319,6 +332,9 @@ jobs:
   xcode-rolling:
     name: Xcode / rolling commit
     needs: xcode-base
+    if: >-
+      always() &&
+      (needs.xcode-base.result == 'success' || inputs.source_run_id != '')
     runs-on: macos-26
     timeout-minutes: 120
     steps:
@@ -345,9 +361,12 @@ jobs:
           persist-credentials: false
 
       - name: Prepare rolling source and matching Xcode cohort
+        env:
+          CACHE_COHORT_RUN_ID: ${{ inputs.source_run_id || github.run_id }}
+          CACHE_COHORT_RUN_ATTEMPT: ${{ inputs.source_run_attempt || github.run_attempt }}
         run: |
           ./scripts/prepare-source.sh rolling
-          ./scripts/scope_boringcache_plan.py xcode "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT"
+          ./scripts/scope_boringcache_plan.py xcode "$CACHE_COHORT_RUN_ID" "$CACHE_COHORT_RUN_ATTEMPT"
           sudo xcode-select --switch "${{ steps.source.outputs.OBS_XCODE_PATH }}"
 
       - name: Start cache setup timing

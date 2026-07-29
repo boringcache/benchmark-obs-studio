@@ -115,10 +115,11 @@ def native_result(row: dict[str, Any]) -> str:
             details += f"; {remote_hits} remote hits"
         return details
     hits = native.get("action_hits")
-    fetched = native.get("bytes_fetched")
     if hits is None:
         return "CAS restored; Xcode does not expose equivalent baseline counters"
-    return f"{hits} action hits; {fetched} bytes fetched"
+    materialized = native.get("objects_materialized")
+    demand_bytes = native.get("bytes_fetched")
+    return f"{hits} action hits; {materialized} objects eagerly materialized; {demand_bytes} demand bytes"
 
 
 def conclusion(surface: str, comparison: dict[str, Any]) -> str:
