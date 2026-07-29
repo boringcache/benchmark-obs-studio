@@ -69,7 +69,7 @@ reused.
 ## Release boundary
 
 The benchmark templates are intentionally inactive until a public
-`boringcache/one` `v1.14.0` distribution commit contains both adapters.
+`boringcache/one` `v1.15.0` distribution commit contains both adapters.
 Substituting a mutable or knowingly incompatible ref would make the proof
 invalid.
 
@@ -77,7 +77,7 @@ After that release, activate the workflows with its reviewed distribution SHA
 and stable version:
 
 ```console
-./scripts/activate-workflows.sh 0123456789abcdef0123456789abcdef01234567 v1.14.0
+./scripts/activate-workflows.sh 0123456789abcdef0123456789abcdef01234567 v1.15.0
 ```
 
 The activation script checks the public Action metadata, requires a

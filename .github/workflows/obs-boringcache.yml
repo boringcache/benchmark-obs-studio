@@ -9,9 +9,9 @@ permissions:
 
 env:
   BENCHMARK_ID: obs-studio-compiler-cache
-  BORINGCACHE_ACTION_SHA: 6b7033721b37075b2138fd0c769bf088e0836ce6
-  BORINGCACHE_ACTION_VERSION: v1.14.0
-  BORINGCACHE_CLI_VERSION: v1.14.0
+  BORINGCACHE_ACTION_SHA: 8294be671cd5a2b73638df1b8e1e240df888297e
+  BORINGCACHE_ACTION_VERSION: v1.15.0
+  BORINGCACHE_CLI_VERSION: v1.15.0
 
 jobs:
   ccache-base:
@@ -60,7 +60,7 @@ jobs:
 
       - name: Configure BoringCache ccache adapter
         id: cache
-        uses: boringcache/one@6b7033721b37075b2138fd0c769bf088e0836ce6 # v1.14.0
+        uses: boringcache/one@8294be671cd5a2b73638df1b8e1e240df888297e # v1.15.0
         with:
           trust-policy: publish
           setup: none
@@ -161,7 +161,7 @@ jobs:
 
       - name: Restore BoringCache ccache adapter
         id: cache
-        uses: boringcache/one@6b7033721b37075b2138fd0c769bf088e0836ce6 # v1.14.0
+        uses: boringcache/one@8294be671cd5a2b73638df1b8e1e240df888297e # v1.15.0
         with:
           trust-policy: restore
           setup: none
@@ -259,7 +259,7 @@ jobs:
 
       - name: Configure BoringCache Xcode adapter
         id: cache
-        uses: boringcache/one@6b7033721b37075b2138fd0c769bf088e0836ce6 # v1.14.0
+        uses: boringcache/one@8294be671cd5a2b73638df1b8e1e240df888297e # v1.15.0
         with:
           trust-policy: publish
           setup: none
@@ -356,7 +356,7 @@ jobs:
 
       - name: Restore BoringCache Xcode adapter
         id: cache
-        uses: boringcache/one@6b7033721b37075b2138fd0c769bf088e0836ce6 # v1.14.0
+        uses: boringcache/one@8294be671cd5a2b73638df1b8e1e240df888297e # v1.15.0
         with:
           trust-policy: restore
           setup: none
