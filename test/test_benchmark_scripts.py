@@ -52,19 +52,44 @@ class CcacheEvidenceTest(unittest.TestCase):
 
 
 class XcodeEvidenceTest(unittest.TestCase):
-    def test_requires_restore_only_remote_evidence(self):
+    def test_requires_complete_eager_warm_restore_evidence(self):
         payload = {
             "schema": "boringcache.xcode.v1",
             "action_hits": 12,
             "action_errors": 0,
             "actions_published": 0,
-            "objects_fetched": 30,
-            "bytes_fetched": 4096,
+            "actions_warmed": 12,
+            "objects_warmed": 30,
+            "objects_materialized": 30,
+            "warmup_bytes": 4096,
+            "warmup_failures": 0,
+            "objects_fetched": 0,
+            "bytes_fetched": 0,
             "publications_failed": 0,
         }
         self.assertTrue(wait_xcode.evidence_ready(payload, "rolling"))
-        payload["actions_published"] = 1
+        payload["warmup_failures"] = 1
         self.assertFalse(wait_xcode.evidence_ready(payload, "rolling"))
+        payload["warmup_failures"] = 0
+        payload["objects_fetched"] = 1
+        self.assertFalse(wait_xcode.evidence_ready(payload, "rolling"))
+
+    def test_result_preserves_eager_warm_and_zero_demand_counters(self):
+        summary = write_result.xcode_summary(
+            {
+                "action_hits": 12,
+                "actions_warmed": 12,
+                "objects_warmed": 30,
+                "objects_materialized": 30,
+                "warmup_bytes": 4096,
+                "warmup_failures": 0,
+                "objects_fetched": 0,
+                "bytes_fetched": 0,
+            }
+        )
+        self.assertEqual(summary["objects_materialized"], 30)
+        self.assertEqual(summary["warmup_bytes"], 4096)
+        self.assertEqual(summary["bytes_fetched"], 0)
 
     def test_requires_xcode_replay_hit_diagnostic(self):
         verify_xcode_log.validate("CompileC object.o source.cpp\nremark: replayed cache hit\n")
@@ -169,6 +194,33 @@ class WorkflowTemplateTest(unittest.TestCase):
         write_result.validate_product_refs("a" * 40, "v1.14.0", "v1.14.0")
         with self.assertRaisesRegex(ValueError, "immutable 40-character"):
             write_result.validate_product_refs("v1", "v1.14.0", "v1.14.0")
+
+    def test_focused_xcode_recovery_reuses_one_immutable_cohort(self):
+        proof = (ROOT / "workflow-templates" / "obs-compiler-cache-proof.yml").read_text()
+        boringcache = (ROOT / "workflow-templates" / "obs-boringcache.yml").read_text()
+
+        self.assertIn("source_run_id:", proof)
+        self.assertIn("run-id: ${{ inputs.source_run_id }}", proof)
+        self.assertIn("needs.actions-cache.result == 'success' || inputs.source_run_id != ''", proof)
+        self.assertIn("if: inputs.source_run_id == ''", boringcache)
+        self.assertIn("CACHE_COHORT_RUN_ID: ${{ inputs.source_run_id || github.run_id }}", boringcache)
+        self.assertIn(
+            './scripts/scope_boringcache_plan.py xcode "$CACHE_COHORT_RUN_ID" "$CACHE_COHORT_RUN_ATTEMPT"',
+            boringcache,
+        )
+
+    def test_active_workflows_are_rendered_from_templates(self):
+        replacements = {
+            "__BORINGCACHE_ONE_SHA__": "8294be671cd5a2b73638df1b8e1e240df888297e",
+            "__BORINGCACHE_ONE_VERSION__": "v1.15.0",
+            "__BORINGCACHE_CLI_VERSION__": "v1.15.0",
+        }
+        for template in (ROOT / "workflow-templates").glob("*.yml"):
+            expected = template.read_text()
+            for source, target in replacements.items():
+                expected = expected.replace(source, target)
+            active = (ROOT / ".github" / "workflows" / template.name).read_text()
+            self.assertEqual(active, expected, template.name)
 
 
 class SourcePreparationTest(unittest.TestCase):

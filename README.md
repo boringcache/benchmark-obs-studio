@@ -29,8 +29,9 @@ also requires native evidence before accepting a BoringCache result:
 - ccache must report remote writes for the base build and remote hits for the
   rolling build, with no remote errors or timeouts;
 - Xcode must report published actions and objects for the base build, then
-  action hits plus fetched objects and bytes with zero publications in the
-  restore-only rolling build.
+  action hits plus complete eager startup materialization, zero warm-up
+  failures, zero demand fetches, and zero publications in the restore-only
+  rolling build.
 
 ## Pinned rolling pair
 
@@ -65,6 +66,13 @@ Dependency installation, CEF/framework downloads, and CMake generation happen
 before the build timer. Both strategies compile the upstream `obs-studio`
 target. DerivedData is fresh on every Xcode runner; only the compilation CAS is
 reused.
+
+If a hard gate changes after the other seven phase receipts are already green,
+the top-level workflow accepts the failed source run ID. That recovery path
+runs only the unproven BoringCache Xcode rolling phase against the source run's
+immutable cache cohort, combines its new artifact with the seven retained
+phase artifacts, and renders the normal eight-row comparison. It is a focused
+proof path, not permission to mix product versions or source commits.
 
 ## Release boundary
 

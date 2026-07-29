@@ -22,8 +22,13 @@ def evidence_ready(payload: dict[str, Any], phase: str) -> bool:
         )
     return (
         payload.get("action_hits", 0) > 0
-        and payload.get("objects_fetched", 0) > 0
-        and payload.get("bytes_fetched", 0) > 0
+        and payload.get("actions_warmed", 0) > 0
+        and payload.get("objects_warmed", 0) > 0
+        and payload.get("objects_materialized", 0) > 0
+        and payload.get("warmup_bytes", 0) > 0
+        and payload.get("warmup_failures", 0) == 0
+        and payload.get("objects_fetched", 0) == 0
+        and payload.get("bytes_fetched", 0) == 0
         and payload.get("actions_published", 0) == 0
     )
 
