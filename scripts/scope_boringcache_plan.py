@@ -6,14 +6,7 @@ import re
 from pathlib import Path
 
 
-def scoped_plan(
-    source: str,
-    surface: str,
-    run_id: str,
-    run_attempt: str,
-    *,
-    git_aware: bool = False,
-) -> str:
+def scoped_plan(source: str, surface: str, run_id: str, run_attempt: str) -> str:
     section = re.compile(
         rf"(^\[adapters\.{re.escape(surface)}\]\n)(.*?)(?=^\[|\Z)",
         re.MULTILINE | re.DOTALL,
@@ -33,16 +26,6 @@ def scoped_plan(
     )
     if count != 1:
         raise ValueError(f"[adapters.{surface}] must contain exactly one tag")
-    if git_aware:
-        replaced, count = re.subn(
-            r"^no-git\s*=\s*(?:true|false)\s*$",
-            "no-git = false",
-            replaced,
-            count=1,
-            flags=re.MULTILINE,
-        )
-        if count != 1:
-            raise ValueError(f"[adapters.{surface}] must contain exactly one no-git setting")
     return source[: match.start(2)] + replaced + source[match.end(2) :]
 
 
@@ -52,23 +35,10 @@ def main() -> int:
     parser.add_argument("run_id")
     parser.add_argument("run_attempt")
     parser.add_argument("--plan", default=".boringcache.toml")
-    parser.add_argument(
-        "--git-aware",
-        action="store_true",
-        help="save to a branch-scoped tag while retaining the run-scoped tag as fallback",
-    )
     args = parser.parse_args()
 
     path = Path(args.plan)
-    path.write_text(
-        scoped_plan(
-            path.read_text(),
-            args.surface,
-            args.run_id,
-            args.run_attempt,
-            git_aware=args.git_aware,
-        )
-    )
+    path.write_text(scoped_plan(path.read_text(), args.surface, args.run_id, args.run_attempt))
     return 0
 
 

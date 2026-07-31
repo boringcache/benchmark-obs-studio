@@ -35,17 +35,6 @@ class PlanScopingTest(unittest.TestCase):
         self.assertIn('tag = "obs-studio-xcode-r42-a3"', result)
         self.assertIn('tag = "obs-studio-ccache"', result)
 
-    def test_git_aware_scope_preserves_seed_as_branch_fallback(self):
-        source = (ROOT / ".boringcache.toml").read_text()
-        result = scope_plan.scoped_plan(
-            source, "xcode", "42", "3", git_aware=True
-        )
-        xcode = result.split("[adapters.xcode]", 1)[1]
-        self.assertIn('tag = "obs-studio-xcode-r42-a3"', xcode)
-        self.assertIn("no-git = false", xcode)
-        self.assertIn("[adapters.ccache]\ntag = \"obs-studio-ccache\"\nno-git = true", result)
-
-
 class CcacheEvidenceTest(unittest.TestCase):
     def test_requires_native_remote_hit_on_boringcache_rolling_build(self):
         payload = {
@@ -257,10 +246,8 @@ class WorkflowTemplateTest(unittest.TestCase):
         self.assertEqual(source.count("runs-on: macos-26"), 2)
         self.assertIn("fail-on-cache-miss: true", source)
         self.assertIn("actions/cache/save@", source)
-        self.assertIn("--git-aware", source)
-        self.assertIn("BORINGCACHE_GIT_BRANCH", source)
-        self.assertIn("BORINGCACHE_CI_PROVIDER: github-actions", source)
-        self.assertIn("BORINGCACHE_CI_REF_NAME: ${{ inputs.continuation_branch }}", source)
+        self.assertNotIn("continuation_branch:", source)
+        self.assertIn("trust-policy: publish", source)
         self.assertIn("--phase continuation", source)
         self.assertIn("trust-policy: publish", source)
         driver = (ROOT / "scripts" / "run-xcode-continuation.sh").read_text()

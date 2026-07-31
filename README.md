@@ -85,10 +85,11 @@ the exact child commit, and saves or publishes the evolved cache for the next
 generation.
 
 The Actions Cache control saves each generation under a new immutable key.
-BoringCache uses a synthetic branch-scoped tag with the immutable seed tag as
-fallback, so the original benchmark cohort is not moved. Each generation
-requires native Xcode replay-hit evidence, complete eager materialization, zero
-warm-up failures, and zero build-time demand fetches before it can advance.
+BoringCache advances the same tag after every successful build, matching how a
+persistent local Xcode CAS evolves; BoringCache's tag-version history retains
+the earlier generations. Each generation requires native Xcode replay-hit
+evidence, complete eager materialization, zero warm-up failures, and zero
+build-time demand fetches before it can advance.
 
 Run an exact chain with a unique lowercase chain ID:
 
