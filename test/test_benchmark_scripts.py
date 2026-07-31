@@ -259,6 +259,8 @@ class WorkflowTemplateTest(unittest.TestCase):
         self.assertIn("actions/cache/save@", source)
         self.assertIn("--git-aware", source)
         self.assertIn("BORINGCACHE_GIT_BRANCH", source)
+        self.assertIn("BORINGCACHE_CI_PROVIDER: github-actions", source)
+        self.assertIn("BORINGCACHE_CI_REF_NAME: ${{ inputs.continuation_branch }}", source)
         self.assertIn("--phase continuation", source)
         self.assertIn("trust-policy: publish", source)
         driver = (ROOT / "scripts" / "run-xcode-continuation.sh").read_text()

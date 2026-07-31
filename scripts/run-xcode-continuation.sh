@@ -5,9 +5,11 @@ seed_run_id="${1:-}"
 seed_run_attempt="${2:-1}"
 actions_seed_key="${3:-}"
 chain_id="${4:-}"
+start_generation="${5:-1}"
 if [[ ! "$seed_run_id" =~ ^[0-9]+$ ]] || [[ ! "$seed_run_attempt" =~ ^[0-9]+$ ]] ||
-   [[ -z "$actions_seed_key" ]] || [[ ! "$chain_id" =~ ^[a-z0-9][a-z0-9._-]*$ ]]; then
-  echo "usage: $0 SEED_RUN_ID SEED_RUN_ATTEMPT ACTIONS_SEED_KEY CHAIN_ID" >&2
+   [[ -z "$actions_seed_key" ]] || [[ ! "$chain_id" =~ ^[a-z0-9][a-z0-9._-]*$ ]] ||
+   [[ ! "$start_generation" =~ ^[1-9][0-9]*$ ]]; then
+  echo "usage: $0 SEED_RUN_ID SEED_RUN_ATTEMPT ACTIONS_SEED_KEY CHAIN_ID [START_GENERATION]" >&2
   exit 2
 fi
 
@@ -18,6 +20,9 @@ restore_key="$actions_seed_key"
 
 while IFS=$'\t' read -r generation parent_sha source_sha version _subject; do
   if [[ "$generation" == "generation" ]]; then
+    continue
+  fi
+  if (( generation < start_generation )); then
     continue
   fi
 

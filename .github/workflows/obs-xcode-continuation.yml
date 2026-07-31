@@ -217,6 +217,15 @@ jobs:
           BORINGCACHE_SAVE_TOKEN: ${{ secrets.BORINGCACHE_SAVE_TOKEN }}
           BORINGCACHE_GIT_BRANCH: ${{ inputs.continuation_branch }}
           BORINGCACHE_DEFAULT_BRANCH: main
+          BORINGCACHE_CI_PROVIDER: github-actions
+          BORINGCACHE_CI_RUN_ID: ${{ github.run_id }}
+          BORINGCACHE_CI_RUN_ATTEMPT: ${{ github.run_attempt }}
+          BORINGCACHE_CI_REPOSITORY: ${{ github.repository }}
+          BORINGCACHE_CI_REF_TYPE: branch
+          BORINGCACHE_CI_REF: refs/heads/${{ inputs.continuation_branch }}
+          BORINGCACHE_CI_REF_NAME: ${{ inputs.continuation_branch }}
+          BORINGCACHE_CI_DEFAULT_BRANCH: main
+          BORINGCACHE_CI_SHA: ${{ env.OBS_SOURCE_SHA }}
 
       - name: Capture cache setup timing
         id: restore
@@ -254,7 +263,7 @@ jobs:
             --restore-seconds "${{ steps.restore.outputs.seconds }}" \
             --build-seconds "${{ steps.build.outputs.seconds }}" \
             --restore-key "obs-studio-xcode-r${{ inputs.boringcache_seed_run_id }}-a${{ inputs.boringcache_seed_run_attempt }}" \
-            --save-key "${{ steps.cache.outputs.cache-tag }}" \
+            --save-key "obs-studio-xcode-r${{ inputs.boringcache_seed_run_id }}-a${{ inputs.boringcache_seed_run_attempt }}-branch-${{ inputs.continuation_branch }}" \
             --native-evidence benchmark-results/xcode-boringcache-continuation-native.json
 
       - name: Upload BoringCache continuation result
