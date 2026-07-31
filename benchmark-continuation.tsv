@@ -1,0 +1,10 @@
+generation	parent_sha	source_sha	version	subject
+1	6750a6e9f5248bbefbc67adb49fb819e6611e284	f730063da39f2e6338629f526acb99c8d574ffa1	32.2.0-rc2	frontend: Adjustments to Add Source window
+2	f730063da39f2e6338629f526acb99c8d574ffa1	4675b12bcd730809f6adf7acd27fd4d2b66e48fc	32.2.0	CI: Increase number of update deltas generated for macOS
+3	4675b12bcd730809f6adf7acd27fd4d2b66e48fc	0218aa658f5bca3655f6dc4f05a9eb9a13b20c9d	32.2.0	CI: Disable fail-fast for Ubuntu builds
+4	0218aa658f5bca3655f6dc4f05a9eb9a13b20c9d	01e68ca6adf13286661aa1813b709c2145cecd71	32.2.0	frontend: Fix deprecated header order in Add Source dialog
+5	01e68ca6adf13286661aa1813b709c2145cecd71	7546be7266dde276d82d4681fe1ab4fd8e32cf2b	32.2.0	frontend: Fix default thumbnail positioning
+6	7546be7266dde276d82d4681fe1ab4fd8e32cf2b	d7a6a8e1b73a81ffd59bd9b5e381d4916516d5d9	32.2.0	win-capture: Resolve inject helper and hook path to absolute paths
+7	d7a6a8e1b73a81ffd59bd9b5e381d4916516d5d9	74579d8452878aef766d9dab0f616a36aa608f45	32.2.0	CI: Increase number of update deltas generated for macOS to 5
+8	74579d8452878aef766d9dab0f616a36aa608f45	e2e0bfc8fcda4639a66ad53b80c275f20dbac382	32.2.0	win-capture: Log hook DLL install / update errors
+9	e2e0bfc8fcda4639a66ad53b80c275f20dbac382	0052d024fd6a5ff1aa04c76cbdffd3085a5dfacc	32.2.1	libobs: Update version to 32.2.1

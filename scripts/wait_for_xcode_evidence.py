@@ -20,6 +20,17 @@ def evidence_ready(payload: dict[str, Any], phase: str) -> bool:
             and payload.get("objects_published", 0) > 0
             and payload.get("bytes_published", 0) > 0
         )
+    if phase == "continuation":
+        return (
+            payload.get("action_hits", 0) > 0
+            and payload.get("actions_warmed", 0) > 0
+            and payload.get("objects_warmed", 0) > 0
+            and payload.get("objects_materialized", 0) > 0
+            and payload.get("warmup_bytes", 0) > 0
+            and payload.get("warmup_failures", 0) == 0
+            and payload.get("objects_fetched", 0) == 0
+            and payload.get("bytes_fetched", 0) == 0
+        )
     return (
         payload.get("action_hits", 0) > 0
         and payload.get("actions_warmed", 0) > 0
@@ -54,7 +65,9 @@ def wait_for_evidence(path: Path, phase: str, timeout: int) -> dict[str, Any]:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--path", required=True)
-    parser.add_argument("--phase", required=True, choices=("base", "rolling"))
+    parser.add_argument(
+        "--phase", required=True, choices=("base", "rolling", "continuation")
+    )
     parser.add_argument("--output", required=True)
     parser.add_argument("--timeout", type=int, default=300)
     args = parser.parse_args()

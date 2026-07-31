@@ -24,6 +24,7 @@ verify_ccache = load_script("verify_ccache_evidence.py")
 wait_xcode = load_script("wait_for_xcode_evidence.py")
 verify_xcode_log = load_script("verify_xcode_build_log.py")
 render = load_script("render_comparison.py")
+render_continuation = load_script("render_continuation.py")
 write_result = load_script("write_phase_result.py")
 
 
@@ -33,6 +34,16 @@ class PlanScopingTest(unittest.TestCase):
         result = scope_plan.scoped_plan(source, "xcode", "42", "3")
         self.assertIn('tag = "obs-studio-xcode-r42-a3"', result)
         self.assertIn('tag = "obs-studio-ccache"', result)
+
+    def test_git_aware_scope_preserves_seed_as_branch_fallback(self):
+        source = (ROOT / ".boringcache.toml").read_text()
+        result = scope_plan.scoped_plan(
+            source, "xcode", "42", "3", git_aware=True
+        )
+        xcode = result.split("[adapters.xcode]", 1)[1]
+        self.assertIn('tag = "obs-studio-xcode-r42-a3"', xcode)
+        self.assertIn("no-git = false", xcode)
+        self.assertIn("[adapters.ccache]\ntag = \"obs-studio-ccache\"\nno-git = true", result)
 
 
 class CcacheEvidenceTest(unittest.TestCase):
@@ -90,6 +101,25 @@ class XcodeEvidenceTest(unittest.TestCase):
         self.assertEqual(summary["objects_materialized"], 30)
         self.assertEqual(summary["warmup_bytes"], 4096)
         self.assertEqual(summary["bytes_fetched"], 0)
+
+    def test_continuation_allows_publication_but_not_demand_fetches(self):
+        payload = {
+            "schema": "boringcache.xcode.v1",
+            "action_hits": 12,
+            "action_errors": 0,
+            "actions_published": 2,
+            "actions_warmed": 12,
+            "objects_warmed": 30,
+            "objects_materialized": 30,
+            "warmup_bytes": 4096,
+            "warmup_failures": 0,
+            "objects_fetched": 0,
+            "bytes_fetched": 0,
+            "publications_failed": 0,
+        }
+        self.assertTrue(wait_xcode.evidence_ready(payload, "continuation"))
+        payload["objects_fetched"] = 1
+        self.assertFalse(wait_xcode.evidence_ready(payload, "continuation"))
 
     def test_requires_xcode_replay_hit_diagnostic(self):
         verify_xcode_log.validate("CompileC object.o source.cpp\nremark: replayed cache hit\n")
@@ -221,6 +251,42 @@ class WorkflowTemplateTest(unittest.TestCase):
                 expected = expected.replace(source, target)
             active = (ROOT / ".github" / "workflows" / template.name).read_text()
             self.assertEqual(active, expected, template.name)
+
+    def test_continuation_workflow_uses_fresh_runners_and_evolving_caches(self):
+        source = (ROOT / "workflow-templates" / "obs-xcode-continuation.yml").read_text()
+        self.assertEqual(source.count("runs-on: macos-26"), 2)
+        self.assertIn("fail-on-cache-miss: true", source)
+        self.assertIn("actions/cache/save@", source)
+        self.assertIn("--git-aware", source)
+        self.assertIn("BORINGCACHE_GIT_BRANCH", source)
+        self.assertIn("--phase continuation", source)
+        self.assertIn("trust-policy: publish", source)
+        driver = (ROOT / "scripts" / "run-xcode-continuation.sh").read_text()
+        self.assertIn("gh run watch", driver)
+        self.assertIn('restore_key="$save_key"', driver)
+
+
+class ContinuationComparisonTest(unittest.TestCase):
+    def test_compares_one_exact_generation(self):
+        results = {}
+        for strategy, seconds in (("actions-cache", 170), ("boringcache", 150)):
+            results[strategy] = {
+                "generation": 2,
+                "project": {
+                    "repository": "obsproject/obs-studio",
+                    "parent_sha": "a" * 40,
+                    "source_sha": "b" * 40,
+                },
+                "timing": {
+                    "restore_seconds": 10,
+                    "build_seconds": seconds,
+                    "restore_and_build_seconds": seconds + 10,
+                },
+                "native": None,
+            }
+        payload = render_continuation.comparison_payload(results)
+        self.assertEqual(payload["comparison"]["boringcache_seconds_saved"], 20)
+        self.assertIn("**20s**", render_continuation.render_markdown(payload))
 
 
 class SourcePreparationTest(unittest.TestCase):

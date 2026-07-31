@@ -74,6 +74,32 @@ immutable cache cohort, combines its new artifact with the seven retained
 phase artifacts, and renders the normal eight-row comparison. It is a focused
 proof path, not permission to mix product versions or source commits.
 
+## Multi-commit continuation
+
+The separate `OBS Studio Xcode cache continuation` workflow answers the
+persistent-product question without another cold seed. It starts from an exact
+existing Xcode cache cohort and replays the commits in
+[`benchmark-continuation.tsv`](benchmark-continuation.tsv) one at a time. Every
+generation runs on a fresh macOS runner, restores the prior generation, builds
+the exact child commit, and saves or publishes the evolved cache for the next
+generation.
+
+The Actions Cache control saves each generation under a new immutable key.
+BoringCache uses a synthetic branch-scoped tag with the immutable seed tag as
+fallback, so the original benchmark cohort is not moved. Each generation
+requires native Xcode replay-hit evidence, complete eager materialization, zero
+warm-up failures, and zero build-time demand fetches before it can advance.
+
+Run an exact chain with a unique lowercase chain ID:
+
+```console
+./scripts/run-xcode-continuation.sh \
+  30455346739 1 gha-xcode-r30455346739-a1 obs-32-2
+```
+
+The driver waits for each paired generation to pass before dispatching its
+child, so a failed generation can never feed an unverified cache forward.
+
 ## Release boundary
 
 The benchmark templates are intentionally inactive until a public

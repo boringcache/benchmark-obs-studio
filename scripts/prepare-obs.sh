@@ -16,7 +16,11 @@ root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # version helper otherwise falls back to the abbreviated SHA, which is not a
 # valid CMake project version.
 # shellcheck disable=SC1091
+requested_version_override="${OBS_VERSION_OVERRIDE:-}"
 source "$root/benchmark-source.env"
+if [[ -n "$requested_version_override" ]]; then
+  OBS_VERSION_OVERRIDE="$requested_version_override"
+fi
 upstream="$root/upstream"
 
 if [[ ! "${OBS_VERSION_OVERRIDE:-}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-(rc|beta)[0-9]+)?$ ]]; then
