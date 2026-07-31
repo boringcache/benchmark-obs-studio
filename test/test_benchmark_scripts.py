@@ -228,7 +228,7 @@ class SourcePreparationTest(unittest.TestCase):
         source = (ROOT / "benchmark-source.env").read_text()
         prepare = (ROOT / "scripts" / "prepare-obs.sh").read_text()
 
-        self.assertIn("OBS_VERSION_OVERRIDE=32.2.0-rc2", source)
+        self.assertIn("OBS_VERSION_OVERRIDE=32.2.0", source)
         self.assertEqual(prepare.count("-DOBS_VERSION_OVERRIDE:STRING"), 2)
         self.assertIn('source "$root/benchmark-source.env"', prepare)
 

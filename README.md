@@ -37,10 +37,10 @@ also requires native evidence before accepting a BoringCache result:
 
 [`benchmark-source.env`](benchmark-source.env) pins this parent/child pair:
 
-- base: `6750a6e9f5248bbefbc67adb49fb819e6611e284`
-- head: `f730063da39f2e6338629f526acb99c8d574ffa1` (`32.2.0-rc2`)
-- change: a real adjustment to the Add Source frontend, including
-  `frontend/dialogs/OBSBasicSourceSelect.cpp`
+- base: `01e68ca6adf13286661aa1813b709c2145cecd71`
+- head: `7546be7266dde276d82d4681fe1ab4fd8e32cf2b` (`32.2.0`)
+- change: the tagged `32.2.0` release's real frontend thumbnail-positioning
+  fix in `frontend/utility/ThumbnailItem.cpp`
 
 `prepare-source.sh` verifies the parent relationship before either build and
 updates OBS's recursive submodules at the selected commit.
