@@ -41,9 +41,9 @@ permissions:
   contents: read
 
 env:
-  BORINGCACHE_ACTION_SHA: 8294be671cd5a2b73638df1b8e1e240df888297e
-  BORINGCACHE_ACTION_VERSION: v1.15.0
-  BORINGCACHE_CLI_VERSION: v1.15.0
+  BORINGCACHE_ACTION_SHA: b1d1e466317cde2d78a86f8cb94347deebb501e9
+  BORINGCACHE_ACTION_VERSION: v1.16.3
+  BORINGCACHE_CLI_VERSION: v1.16.3
   OBS_SOURCE_SHA: ${{ inputs.source_sha }}
   OBS_PARENT_SHA: ${{ inputs.parent_sha }}
   OBS_VERSION_OVERRIDE: ${{ inputs.obs_version }}
@@ -195,7 +195,7 @@ jobs:
 
       - name: Configure evolving BoringCache Xcode adapter
         id: cache
-        uses: boringcache/one@8294be671cd5a2b73638df1b8e1e240df888297e # v1.15.0
+        uses: boringcache/one@b1d1e466317cde2d78a86f8cb94347deebb501e9 # v1.16.3
         with:
           trust-policy: publish
           setup: none
