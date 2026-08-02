@@ -230,9 +230,9 @@ class WorkflowTemplateTest(unittest.TestCase):
 
     def test_active_workflows_are_rendered_from_templates(self):
         replacements = {
-            "__BORINGCACHE_ONE_SHA__": "b1d1e466317cde2d78a86f8cb94347deebb501e9",
-            "__BORINGCACHE_ONE_VERSION__": "v1.16.3",
-            "__BORINGCACHE_CLI_VERSION__": "v1.16.3",
+            "__BORINGCACHE_ONE_SHA__": "bf810e34331db84f9f11930e83b8813b5ad31ba1",
+            "__BORINGCACHE_ONE_VERSION__": "v1.16.4",
+            "__BORINGCACHE_CLI_VERSION__": "v1.16.4",
         }
         for template in (ROOT / "workflow-templates").glob("*.yml"):
             expected = template.read_text()

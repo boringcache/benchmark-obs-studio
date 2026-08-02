@@ -103,7 +103,7 @@ child, so a failed generation can never feed an unverified cache forward.
 
 ## Release boundary
 
-The active workflows pin the reviewed `boringcache/one` v1.16.3 distribution
+The active workflows pin the reviewed `boringcache/one` v1.16.4 distribution
 commit, which contains both compiler-cache adapters. Substituting a mutable or
 knowingly incompatible ref would make the proof invalid.
 
@@ -111,7 +111,7 @@ To move the benchmark to a later stable release, render the workflows with its
 reviewed distribution SHA and matching version:
 
 ```console
-./scripts/activate-workflows.sh 0123456789abcdef0123456789abcdef01234567 v1.16.3
+./scripts/activate-workflows.sh 0123456789abcdef0123456789abcdef01234567 v1.16.4
 ```
 
 The activation script checks the public Action metadata, requires a
