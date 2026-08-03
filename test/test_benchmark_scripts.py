@@ -243,6 +243,9 @@ class WorkflowTemplateTest(unittest.TestCase):
         self.assertIn('- "benchmark-source.env"', proof)
         self.assertIn('cron: "*/30 * * * *"', sync)
         self.assertIn("advance-source-pair.sh benchmark-source.env OBS", sync)
+        self.assertIn("Require the previous rolling benchmark to be green", sync)
+        self.assertIn("steps.previous.outputs.ready == 'true'", sync)
+        self.assertIn("group: benchmark-obs-studio-compiler-cache", proof)
 
     def test_boringcache_template_uses_current_adapter_contract(self):
         source = (ROOT / "workflow-templates" / "obs-boringcache.yml").read_text()

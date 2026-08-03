@@ -22,6 +22,10 @@ permissions:
   actions: write
   contents: read
 
+concurrency:
+  group: benchmark-obs-studio-compiler-cache
+  cancel-in-progress: false
+
 jobs:
   actions-cache:
     name: Actions Cache baseline
