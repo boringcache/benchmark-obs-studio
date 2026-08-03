@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -26,6 +28,50 @@ verify_xcode_log = load_script("verify_xcode_build_log.py")
 render = load_script("render_comparison.py")
 render_continuation = load_script("render_continuation.py")
 write_result = load_script("write_phase_result.py")
+
+
+class SourceSyncTest(unittest.TestCase):
+    def test_advances_exactly_one_upstream_commit(self):
+        current = "a" * 40
+        following = "b" * 40
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "benchmark-source.env"
+            source.write_text(
+                "OBS_SOURCE_REPOSITORY=obsproject/obs-studio\n"
+                f"OBS_BASE_SHA={'0' * 40}\n"
+                f"OBS_HEAD_SHA={current}\n"
+                "OBS_VERSION_OVERRIDE=32.2.0\n"
+            )
+            bin_dir = root / "bin"
+            bin_dir.mkdir()
+            gh = bin_dir / "gh"
+            gh.write_text(
+                "#!/usr/bin/env bash\n"
+                "case \"$*\" in\n"
+                "  'api repos/obsproject/obs-studio --jq .default_branch') echo master ;;\n"
+                f"  'api repos/obsproject/obs-studio/compare/{current}...master') "
+                f"echo '{{\"status\":\"ahead\",\"commits\":[{{\"sha\":\"{following}\"}}]}}' ;;\n"
+                f"  'api repos/obsproject/obs-studio/commits/{following} --jq .parents[0].sha // empty') echo {current} ;;\n"
+                "  *) echo \"Unexpected gh call: $*\" >&2; exit 1 ;;\n"
+                "esac\n"
+            )
+            gh.chmod(0o755)
+
+            subprocess.run(
+                [
+                    str(ROOT / "scripts/advance-source-pair.sh"),
+                    str(source),
+                    "OBS",
+                ],
+                check=True,
+                env={**os.environ, "PATH": f"{bin_dir}:{os.environ['PATH']}"},
+            )
+            settings = dict(line.split("=", 1) for line in source.read_text().splitlines())
+
+        self.assertEqual(settings["OBS_BASE_SHA"], current)
+        self.assertEqual(settings["OBS_HEAD_SHA"], following)
+        self.assertEqual(settings["OBS_VERSION_OVERRIDE"], "32.2.0")
 
 
 class PlanScopingTest(unittest.TestCase):
@@ -190,6 +236,14 @@ class ComparisonTest(unittest.TestCase):
 
 
 class WorkflowTemplateTest(unittest.TestCase):
+    def test_source_updates_run_the_compiler_cache_proof(self):
+        proof = (ROOT / ".github" / "workflows" / "obs-compiler-cache-proof.yml").read_text()
+        sync = (ROOT / ".github" / "workflows" / "sync.yml").read_text()
+
+        self.assertIn('- "benchmark-source.env"', proof)
+        self.assertIn('cron: "*/30 * * * *"', sync)
+        self.assertIn("advance-source-pair.sh benchmark-source.env OBS", sync)
+
     def test_boringcache_template_uses_current_adapter_contract(self):
         source = (ROOT / "workflow-templates" / "obs-boringcache.yml").read_text()
         self.assertEqual(source.count("boringcache/one@__BORINGCACHE_ONE_SHA__"), 4)

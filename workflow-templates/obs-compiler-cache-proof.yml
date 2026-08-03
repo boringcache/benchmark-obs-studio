@@ -1,6 +1,11 @@
 name: "OBS Studio compiler-cache proof"
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - "benchmark-source.env"
   workflow_dispatch:
     inputs:
       source_run_id:
