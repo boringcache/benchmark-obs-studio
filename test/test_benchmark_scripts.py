@@ -182,7 +182,7 @@ class WorkflowContractTest(unittest.TestCase):
         source = (ROOT / ".github" / "workflows" / "obs-boringcache.yml").read_text()
         self.assertEqual(
             source.count(
-                "boringcache/one@09e053620cda4d3472f26a3ddd181144a108e2c2"
+                "boringcache/one@366e1aa37c271014d69aa6e1a12df57c472fdf5d"
             ),
             4,
         )
