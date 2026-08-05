@@ -8,6 +8,11 @@ on:
       - "benchmark-source.env"
   workflow_dispatch:
     inputs:
+      cli_version:
+        description: "Optional exact BoringCache CLI release or prerelease tag"
+        required: false
+        default: ""
+        type: string
       source_run_id:
         description: "Optional failed proof run whose seven green phase artifacts and Xcode cache cohort should be reused"
         required: false
@@ -31,12 +36,15 @@ jobs:
     name: Actions Cache baseline
     if: inputs.source_run_id == ''
     uses: ./.github/workflows/obs-actions-cache.yml
+    with:
+      cli_version: ${{ inputs.cli_version }}
     secrets: inherit
 
   boringcache:
     name: BoringCache candidate
     uses: ./.github/workflows/obs-boringcache.yml
     with:
+      cli_version: ${{ inputs.cli_version }}
       source_run_id: ${{ inputs.source_run_id }}
       source_run_attempt: ${{ inputs.source_run_attempt }}
     secrets: inherit

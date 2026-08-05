@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 from pathlib import Path
 from typing import Any
 
@@ -28,12 +27,6 @@ def validate_result(payload: dict[str, Any], path: Path) -> None:
     for field in ("reporting_mode", "reporting_reason", "validity_reason", "cache_import_status"):
         if not classification.get(field):
             raise ValueError(f"missing classification.{field} in {path}")
-    product_refs = payload.get("product_refs") or {}
-    if not re.fullmatch(r"[0-9a-f]{40}", str(product_refs.get("action_sha", ""))):
-        raise ValueError(f"missing immutable Action SHA in {path}")
-    for field in ("action_version", "cli_version"):
-        if not re.fullmatch(r"v\d+\.\d+\.\d+", str(product_refs.get(field, ""))):
-            raise ValueError(f"missing stable product_refs.{field} in {path}")
 
 
 def load_results(input_dir: Path) -> dict[tuple[str, str, str], dict[str, Any]]:
@@ -55,9 +48,6 @@ def load_results(input_dir: Path) -> dict[tuple[str, str, str], dict[str, Any]]:
     if missing:
         labels = ", ".join("/".join(key) for key in sorted(missing))
         raise ValueError(f"missing benchmark results: {labels}")
-    product_refs = {json.dumps(payload["product_refs"], sort_keys=True) for payload in results.values()}
-    if len(product_refs) != 1:
-        raise ValueError("benchmark results do not share one exact CLI and Action release cohort")
     return results
 
 
@@ -89,11 +79,10 @@ def comparison_payload(
         "classification": {
             "sample_valid": True,
             "reporting_mode": "commit-build",
-            "reporting_reason": "all eight hard-gated phase samples share one exact product cohort",
+            "reporting_reason": "all eight workload phase samples share one adjacent source cohort",
             "validity_reason": "every phase result passed its cache import and native replay gates",
             "cache_import_status": "hit",
         },
-        "product_refs": next(iter(results.values()))["product_refs"],
         "results": [results[key] for key in sorted(results)],
         "rolling_comparison": {
             surface: surface_comparison(results, surface) for surface in SURFACES

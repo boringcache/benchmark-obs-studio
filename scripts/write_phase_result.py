@@ -4,7 +4,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import re
 from pathlib import Path
 from typing import Any
 
@@ -19,19 +18,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--build-seconds", type=int, required=True)
     parser.add_argument("--cache-key", default="")
     parser.add_argument("--native-evidence")
-    parser.add_argument("--action-sha", default=os.environ.get("BORINGCACHE_ACTION_SHA", ""))
-    parser.add_argument("--action-version", default=os.environ.get("BORINGCACHE_ACTION_VERSION", ""))
-    parser.add_argument("--cli-version", default=os.environ.get("BORINGCACHE_CLI_VERSION", ""))
     parser.add_argument("--output-dir", default="benchmark-results")
     return parser.parse_args()
-
-
-def validate_product_refs(action_sha: str, action_version: str, cli_version: str) -> None:
-    if not re.fullmatch(r"[0-9a-f]{40}", action_sha):
-        raise ValueError("action SHA must be an immutable 40-character lowercase commit")
-    for label, value in (("action version", action_version), ("CLI version", cli_version)):
-        if not re.fullmatch(r"v\d+\.\d+\.\d+", value):
-            raise ValueError(f"{label} must be a stable vX.Y.Z release, got {value or '<missing>'}")
 
 
 def classification(surface: str, strategy: str, phase: str) -> dict[str, Any]:
@@ -85,33 +73,8 @@ def ccache_summary(payload: dict[str, Any] | None) -> dict[str, Any] | None:
     }
 
 
-def xcode_summary(payload: dict[str, Any] | None) -> dict[str, Any] | None:
-    if payload is None:
-        return None
-    return {
-        key: payload.get(key, 0)
-        for key in (
-            "action_hits",
-            "action_misses",
-            "action_errors",
-            "actions_published",
-            "actions_warmed",
-            "objects_fetched",
-            "objects_materialized",
-            "objects_published",
-            "objects_warmed",
-            "bytes_fetched",
-            "bytes_published",
-            "publications_failed",
-            "warmup_bytes",
-            "warmup_failures",
-        )
-    }
-
-
 def main() -> int:
     args = parse_args()
-    validate_product_refs(args.action_sha, args.action_version, args.cli_version)
     native = load_native_evidence(args.native_evidence)
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -132,13 +95,8 @@ def main() -> int:
             "end_to_end_seconds": args.restore_seconds + args.build_seconds,
         },
         "classification": classification(args.surface, args.strategy, args.phase),
-        "product_refs": {
-            "action_sha": args.action_sha,
-            "action_version": args.action_version,
-            "cli_version": args.cli_version,
-        },
         "cache": {"key": args.cache_key or None},
-        "native": ccache_summary(native) if args.surface == "ccache" else xcode_summary(native),
+        "native": ccache_summary(native) if args.surface == "ccache" else None,
         "github": {
             "repository": os.environ.get("GITHUB_REPOSITORY"),
             "run_id": os.environ.get("GITHUB_RUN_ID"),

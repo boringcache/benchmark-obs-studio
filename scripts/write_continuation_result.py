@@ -7,9 +7,6 @@ import os
 from pathlib import Path
 from typing import Any
 
-from write_phase_result import validate_product_refs, xcode_summary
-
-
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--strategy", required=True, choices=("actions-cache", "boringcache"))
@@ -35,10 +32,6 @@ def load_native(path: str | None) -> dict[str, Any] | None:
 
 
 def result_payload(args: argparse.Namespace) -> dict[str, Any]:
-    action_sha = os.environ.get("BORINGCACHE_ACTION_SHA", "")
-    action_version = os.environ.get("BORINGCACHE_ACTION_VERSION", "")
-    cli_version = os.environ.get("BORINGCACHE_CLI_VERSION", "")
-    validate_product_refs(action_sha, action_version, cli_version)
     native = load_native(args.native_evidence)
     return {
         "schema_version": 1,
@@ -65,12 +58,7 @@ def result_payload(args: argparse.Namespace) -> dict[str, Any]:
             "bytes_after": args.cache_bytes_after,
             "growth_bytes": max(0, args.cache_bytes_after - args.cache_bytes_before),
         },
-        "native": xcode_summary(native),
-        "product_refs": {
-            "action_sha": action_sha,
-            "action_version": action_version,
-            "cli_version": cli_version,
-        },
+        "native": native,
         "classification": {
             "sample_valid": True,
             "reporting_mode": "continuation",

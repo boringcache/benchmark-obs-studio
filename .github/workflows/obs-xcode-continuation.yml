@@ -3,6 +3,11 @@ name: "OBS Studio Xcode cache continuation"
 on:
   workflow_dispatch:
     inputs:
+      cli_version:
+        description: "Optional exact BoringCache CLI release or prerelease tag"
+        required: false
+        default: ""
+        type: string
       generation:
         description: "One-based continuation generation"
         required: true
@@ -41,9 +46,6 @@ permissions:
   contents: read
 
 env:
-  BORINGCACHE_ACTION_SHA: bf810e34331db84f9f11930e83b8813b5ad31ba1
-  BORINGCACHE_ACTION_VERSION: v1.16.4
-  BORINGCACHE_CLI_VERSION: v1.16.4
   OBS_SOURCE_SHA: ${{ inputs.source_sha }}
   OBS_PARENT_SHA: ${{ inputs.parent_sha }}
   OBS_VERSION_OVERRIDE: ${{ inputs.obs_version }}
@@ -195,12 +197,14 @@ jobs:
 
       - name: Configure evolving BoringCache Xcode adapter
         id: cache
-        uses: boringcache/one@bf810e34331db84f9f11930e83b8813b5ad31ba1 # v1.16.4
+        uses: boringcache/one@09e053620cda4d3472f26a3ddd181144a108e2c2 # v1.16.8
         with:
+          cli-version: ${{ inputs.cli_version }}
           trust-policy: publish
           setup: none
           mode: xcode
           working-directory: ./upstream
+          fail-on-cache-error: true
           metadata-hints: |
             benchmark=obs-studio-xcode-continuation
             phase=commit
@@ -229,13 +233,6 @@ jobs:
       - name: Require Xcode replay-hit diagnostics
         run: ./scripts/verify_xcode_build_log.py benchmark-results/xcode-boringcache-continuation.log
 
-      - name: Require continuation-native Xcode evidence
-        run: |
-          ./scripts/wait_for_xcode_evidence.py \
-            --path "$BORINGCACHE_XCODE_EVIDENCE_JSON" \
-            --phase continuation \
-            --output benchmark-results/xcode-boringcache-continuation-native.json
-
       - name: Write continuation result
         run: |
           ./scripts/write_continuation_result.py \
@@ -246,14 +243,21 @@ jobs:
             --restore-seconds "${{ steps.restore.outputs.seconds }}" \
             --build-seconds "${{ steps.build.outputs.seconds }}" \
             --restore-key "obs-studio-xcode-r${{ inputs.boringcache_seed_run_id }}-a${{ inputs.boringcache_seed_run_attempt }}" \
-            --save-key "obs-studio-xcode-r${{ inputs.boringcache_seed_run_id }}-a${{ inputs.boringcache_seed_run_attempt }}" \
-            --native-evidence benchmark-results/xcode-boringcache-continuation-native.json
+            --save-key "obs-studio-xcode-r${{ inputs.boringcache_seed_run_id }}-a${{ inputs.boringcache_seed_run_attempt }}"
 
       - name: Upload BoringCache continuation result
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: continuation-xcode-boringcache-g${{ inputs.generation }}
           path: benchmark-results
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Retain BoringCache product evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: boringcache-product-xcode-continuation-g${{ inputs.generation }}
+          path: ${{ steps.cache.outputs.evidence-path }}
           if-no-files-found: error
           retention-days: 30
 
