@@ -1,25 +1,37 @@
-name: "OBS Studio proof - Actions Cache"
+name: "OBS Studio Actions Cache benchmark"
+run-name: >-
+  ${{ github.event_name == 'pull_request' && format('OBS validation | PR #{0}', github.event.pull_request.number) || github.event_name == 'push' && 'OBS rolling | Upstream update' || format('OBS Actions Cache | Manual dispatch ({0})', github.ref_name) }}
 
 on:
-  workflow_call:
+  push:
+    branches: [main]
+    paths: ["benchmark-source.env"]
+  workflow_dispatch:
     inputs:
-      cli_version:
-        description: "Exact CLI used by the paired BoringCache candidate"
+      runner_label:
+        description: "Optional Linux runner label for a manual main-branch experiment."
         required: false
         default: ""
         type: string
+  pull_request:
+    paths: [".github/workflows/obs-actions-cache.yml", "benchmark-source.env", "scripts/**"]
 
 permissions:
   actions: write
   contents: read
+
+concurrency:
+  group: benchmark-obs-actions-cache-${{ github.ref_name }}
+  cancel-in-progress: false
 
 env:
   BENCHMARK_ID: obs-studio-compiler-cache
 
 jobs:
   ccache-base:
-    name: ccache / base
-    runs-on: ubuntu-24.04
+    name: GitHub Actions OBS ccache cold
+    if: inputs.runner_label == '' || github.ref_name == 'main'
+    runs-on: ${{ github.event_name == 'workflow_dispatch' && github.ref_name == 'main' && inputs.runner_label || 'ubuntu-24.04' }}
     timeout-minutes: 120
     env:
       CCACHE_DIR: ${{ github.workspace }}/.ccache
@@ -96,9 +108,9 @@ jobs:
           retention-days: 30
 
   ccache-rolling:
-    name: ccache / rolling commit
+    name: GitHub Actions OBS ccache commit
     needs: ccache-base
-    runs-on: ubuntu-24.04
+    runs-on: ${{ github.event_name == 'workflow_dispatch' && github.ref_name == 'main' && inputs.runner_label || 'ubuntu-24.04' }}
     timeout-minutes: 120
     env:
       CCACHE_DIR: ${{ github.workspace }}/.ccache
@@ -184,7 +196,7 @@ jobs:
           retention-days: 30
 
   xcode-base:
-    name: Xcode / base
+    name: GitHub Actions OBS Xcode cold
     runs-on: macos-26
     timeout-minutes: 120
     env:
@@ -252,7 +264,7 @@ jobs:
           retention-days: 30
 
   xcode-rolling:
-    name: Xcode / rolling commit
+    name: GitHub Actions OBS Xcode commit
     needs: xcode-base
     runs-on: macos-26
     timeout-minutes: 120

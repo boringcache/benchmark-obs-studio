@@ -52,7 +52,7 @@ env:
 
 jobs:
   actions-cache:
-    name: Actions Cache / generation ${{ inputs.generation }}
+    name: GitHub Actions OBS Xcode generation ${{ inputs.generation }}
     runs-on: macos-26
     timeout-minutes: 120
     env:
@@ -153,7 +153,7 @@ jobs:
           retention-days: 30
 
   boringcache:
-    name: BoringCache / generation ${{ inputs.generation }}
+    name: BoringCache OBS Xcode generation ${{ inputs.generation }}
     runs-on: macos-26
     timeout-minutes: 120
     steps:

@@ -1,7 +1,12 @@
-name: "OBS Studio proof - BoringCache"
+name: "OBS Studio BoringCache benchmark"
+run-name: >-
+  ${{ github.event_name == 'pull_request' && format('OBS validation | PR #{0}', github.event.pull_request.number) || inputs.cli_version != '' && format('OBS canary | CLI {0}', inputs.cli_version) || github.event_name == 'push' && 'OBS rolling | Upstream update' || format('OBS BoringCache | Manual dispatch ({0})', github.ref_name) }}
 
 on:
-  workflow_call:
+  push:
+    branches: [main]
+    paths: ["benchmark-source.env"]
+  workflow_dispatch:
     inputs:
       cli_version:
         description: "Optional exact BoringCache CLI release or prerelease tag"
@@ -18,19 +23,30 @@ on:
         required: false
         default: "1"
         type: string
+      runner_label:
+        description: "Optional Linux runner label for a manual main-branch experiment."
+        required: false
+        default: ""
+        type: string
+  pull_request:
+    paths: [".github/workflows/obs-boringcache.yml", "benchmark-source.env", "scripts/**"]
 
 permissions:
   actions: read
   contents: read
+
+concurrency:
+  group: benchmark-obs-boringcache-${{ github.ref_name }}
+  cancel-in-progress: false
 
 env:
   BENCHMARK_ID: obs-studio-compiler-cache
 
 jobs:
   ccache-base:
-    name: ccache / base
-    if: inputs.source_run_id == ''
-    runs-on: ubuntu-24.04
+    name: BoringCache OBS ccache cold
+    if: inputs.source_run_id == '' && (inputs.runner_label == '' || github.ref_name == 'main')
+    runs-on: ${{ github.event_name == 'workflow_dispatch' && github.ref_name == 'main' && inputs.runner_label || 'ubuntu-24.04' }}
     timeout-minutes: 120
     env:
       CCACHE_DIR: ${{ github.workspace }}/.boringcache-local-ccache
@@ -142,9 +158,9 @@ jobs:
           retention-days: 30
 
   ccache-rolling:
-    name: ccache / rolling commit
+    name: BoringCache OBS ccache commit
     needs: ccache-base
-    runs-on: ubuntu-24.04
+    runs-on: ${{ github.event_name == 'workflow_dispatch' && github.ref_name == 'main' && inputs.runner_label || 'ubuntu-24.04' }}
     timeout-minutes: 120
     env:
       CCACHE_DIR: ${{ github.workspace }}/.boringcache-local-ccache
@@ -253,7 +269,7 @@ jobs:
           retention-days: 30
 
   xcode-base:
-    name: Xcode / base
+    name: BoringCache OBS Xcode cold
     if: inputs.source_run_id == ''
     runs-on: macos-26
     timeout-minutes: 120
@@ -355,7 +371,7 @@ jobs:
           retention-days: 30
 
   xcode-rolling:
-    name: Xcode / rolling commit
+    name: BoringCache OBS Xcode commit
     needs: xcode-base
     if: >-
       always() &&
