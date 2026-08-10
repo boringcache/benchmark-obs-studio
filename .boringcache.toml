@@ -6,9 +6,11 @@ workspace = "boringcache/benchmark-obs-studio"
 [adapters.ccache]
 tag = "obs-studio-ccache"
 no-git = true
-metadata-hints = ["benchmark=obs-studio-compiler-cache", "tool=ccache"]
+metadata-hints = ["benchmark=obs-studio-compiler-cache", "tool=ccache", "upstream-job=ubuntu-build-24.04"]
+command = [".github/scripts/build-ubuntu", "--config", "RelWithDebInfo", "--target", "ubuntu-x86_64"]
 
 [adapters.xcode]
 tag = "obs-studio-xcode"
 no-git = true
-metadata-hints = ["benchmark=obs-studio-compiler-cache", "tool=xcode"]
+metadata-hints = ["benchmark=obs-studio-compiler-cache", "tool=xcode", "upstream-job=macos-build-arm64"]
+command = [".github/scripts/build-macos", "--config", "RelWithDebInfo", "--target", "macos-arm64"]

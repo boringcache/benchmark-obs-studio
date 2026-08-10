@@ -33,3 +33,4 @@ if [[ "$resolved" != "$source_sha" ]]; then
 fi
 
 echo "Prepared OBS Studio continuation source at $resolved"
+python3 "$root/scripts/verify-upstream-recipe.py"

@@ -75,7 +75,7 @@ jobs:
           repository: ${{ steps.source.outputs.OBS_SOURCE_REPOSITORY }}
           ref: ${{ steps.source.outputs.OBS_HEAD_SHA }}
           path: upstream
-          fetch-depth: 2
+          fetch-depth: 0
           submodules: recursive
           persist-credentials: false
 
@@ -111,14 +111,13 @@ jobs:
         id: restore
         run: echo "seconds=$(( $(date +%s) - ${{ steps.restore_start.outputs.started_at }} ))" >> "$GITHUB_OUTPUT"
 
-      - name: Install dependencies and generate the OBS build
-        run: ./scripts/prepare-obs.sh ccache boringcache
-
       - name: Build base commit
         id: build
         run: |
+          set -euo pipefail
           started_at="$(date +%s)"
-          ./scripts/run-obs-build.sh ccache benchmark-results/ccache-boringcache-base.log
+          python3 ./scripts/run-benchmark-plan.py ccache --working-directory upstream \
+            2>&1 | tee benchmark-results/ccache-boringcache-base.log
           echo "seconds=$(( $(date +%s) - started_at ))" >> "$GITHUB_OUTPUT"
 
       - name: Capture and verify native remote evidence
@@ -186,7 +185,7 @@ jobs:
           repository: ${{ steps.source.outputs.OBS_SOURCE_REPOSITORY }}
           ref: ${{ steps.source.outputs.OBS_HEAD_SHA }}
           path: upstream
-          fetch-depth: 2
+          fetch-depth: 0
           submodules: recursive
           persist-credentials: false
 
@@ -222,14 +221,13 @@ jobs:
         id: restore
         run: echo "seconds=$(( $(date +%s) - ${{ steps.restore_start.outputs.started_at }} ))" >> "$GITHUB_OUTPUT"
 
-      - name: Install dependencies and generate the OBS build
-        run: ./scripts/prepare-obs.sh ccache boringcache
-
       - name: Build rolling commit
         id: build
         run: |
+          set -euo pipefail
           started_at="$(date +%s)"
-          ./scripts/run-obs-build.sh ccache benchmark-results/ccache-boringcache-rolling.log
+          python3 ./scripts/run-benchmark-plan.py ccache --working-directory upstream \
+            2>&1 | tee benchmark-results/ccache-boringcache-rolling.log
           echo "seconds=$(( $(date +%s) - started_at ))" >> "$GITHUB_OUTPUT"
 
       - name: Capture and verify native remote evidence
@@ -295,7 +293,7 @@ jobs:
           repository: ${{ steps.source.outputs.OBS_SOURCE_REPOSITORY }}
           ref: ${{ steps.source.outputs.OBS_HEAD_SHA }}
           path: upstream
-          fetch-depth: 2
+          fetch-depth: 0
           submodules: recursive
           persist-credentials: false
 
@@ -331,16 +329,13 @@ jobs:
         id: restore
         run: echo "seconds=$(( $(date +%s) - ${{ steps.restore_start.outputs.started_at }} ))" >> "$GITHUB_OUTPUT"
 
-      - name: Install dependencies and generate the OBS Xcode project
-        env:
-          OBS_XCODE_PATH: ${{ steps.source.outputs.OBS_XCODE_PATH }}
-        run: ./scripts/prepare-obs.sh xcode boringcache
-
       - name: Build base commit
         id: build
         run: |
+          set -euo pipefail
           started_at="$(date +%s)"
-          ./scripts/run-obs-build.sh xcode benchmark-results/xcode-boringcache-base.log
+          python3 ./scripts/run-benchmark-plan.py xcode --working-directory upstream \
+            2>&1 | tee benchmark-results/xcode-boringcache-base.log
           echo "seconds=$(( $(date +%s) - started_at ))" >> "$GITHUB_OUTPUT"
 
       - name: Write base result
@@ -397,7 +392,7 @@ jobs:
           repository: ${{ steps.source.outputs.OBS_SOURCE_REPOSITORY }}
           ref: ${{ steps.source.outputs.OBS_HEAD_SHA }}
           path: upstream
-          fetch-depth: 2
+          fetch-depth: 0
           submodules: recursive
           persist-credentials: false
 
@@ -436,16 +431,13 @@ jobs:
         id: restore
         run: echo "seconds=$(( $(date +%s) - ${{ steps.restore_start.outputs.started_at }} ))" >> "$GITHUB_OUTPUT"
 
-      - name: Install dependencies and generate the OBS Xcode project
-        env:
-          OBS_XCODE_PATH: ${{ steps.source.outputs.OBS_XCODE_PATH }}
-        run: ./scripts/prepare-obs.sh xcode boringcache
-
       - name: Build rolling commit
         id: build
         run: |
+          set -euo pipefail
           started_at="$(date +%s)"
-          ./scripts/run-obs-build.sh xcode benchmark-results/xcode-boringcache-rolling.log
+          python3 ./scripts/run-benchmark-plan.py xcode --working-directory upstream \
+            2>&1 | tee benchmark-results/xcode-boringcache-rolling.log
           echo "seconds=$(( $(date +%s) - started_at ))" >> "$GITHUB_OUTPUT"
 
       - name: Require Xcode replay-hit diagnostics

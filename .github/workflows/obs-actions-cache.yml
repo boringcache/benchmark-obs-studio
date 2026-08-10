@@ -53,7 +53,7 @@ jobs:
           repository: ${{ steps.source.outputs.OBS_SOURCE_REPOSITORY }}
           ref: ${{ steps.source.outputs.OBS_HEAD_SHA }}
           path: upstream
-          fetch-depth: 2
+          fetch-depth: 0
           submodules: recursive
           persist-credentials: false
 
@@ -63,14 +63,13 @@ jobs:
       - name: Install the benchmark ccache release
         run: ./scripts/install-ccache.sh
 
-      - name: Install dependencies and generate the OBS build
-        run: ./scripts/prepare-obs.sh ccache actions-cache
-
       - name: Build base commit
         id: build
         run: |
+          set -euo pipefail
           started_at="$(date +%s)"
-          ./scripts/run-obs-build.sh ccache benchmark-results/ccache-actions-cache-base.log
+          python3 ./scripts/run-benchmark-plan.py ccache --working-directory upstream \
+            2>&1 | tee benchmark-results/ccache-actions-cache-base.log
           echo "seconds=$(( $(date +%s) - started_at ))" >> "$GITHUB_OUTPUT"
 
       - name: Capture and verify ccache evidence
@@ -132,7 +131,7 @@ jobs:
           repository: ${{ steps.source.outputs.OBS_SOURCE_REPOSITORY }}
           ref: ${{ steps.source.outputs.OBS_HEAD_SHA }}
           path: upstream
-          fetch-depth: 2
+          fetch-depth: 0
           submodules: recursive
           persist-credentials: false
 
@@ -157,14 +156,13 @@ jobs:
         id: restore
         run: echo "seconds=$(( $(date +%s) - ${{ steps.restore_start.outputs.started_at }} ))" >> "$GITHUB_OUTPUT"
 
-      - name: Install dependencies and generate the OBS build
-        run: ./scripts/prepare-obs.sh ccache actions-cache
-
       - name: Build rolling commit
         id: build
         run: |
+          set -euo pipefail
           started_at="$(date +%s)"
-          ./scripts/run-obs-build.sh ccache benchmark-results/ccache-actions-cache-rolling.log
+          python3 ./scripts/run-benchmark-plan.py ccache --working-directory upstream \
+            2>&1 | tee benchmark-results/ccache-actions-cache-rolling.log
           echo "seconds=$(( $(date +%s) - started_at ))" >> "$GITHUB_OUTPUT"
 
       - name: Capture and verify ccache evidence
@@ -216,23 +214,23 @@ jobs:
           repository: ${{ steps.source.outputs.OBS_SOURCE_REPOSITORY }}
           ref: ${{ steps.source.outputs.OBS_HEAD_SHA }}
           path: upstream
-          fetch-depth: 2
+          fetch-depth: 0
           submodules: recursive
           persist-credentials: false
 
       - name: Prepare base source
         run: ./scripts/prepare-source.sh base
 
-      - name: Install dependencies and generate the OBS Xcode project
-        env:
-          OBS_XCODE_PATH: ${{ steps.source.outputs.OBS_XCODE_PATH }}
-        run: ./scripts/prepare-obs.sh xcode actions-cache
+      - name: Select upstream's pinned Xcode
+        run: sudo xcode-select --switch "${{ steps.source.outputs.OBS_XCODE_PATH }}"
 
       - name: Build base commit
         id: build
         run: |
+          set -euo pipefail
           started_at="$(date +%s)"
-          ./scripts/run-obs-build.sh xcode benchmark-results/xcode-actions-cache-base.log
+          python3 ./scripts/run-benchmark-plan.py xcode --working-directory upstream \
+            2>&1 | tee benchmark-results/xcode-actions-cache-base.log
           echo "seconds=$(( $(date +%s) - started_at ))" >> "$GITHUB_OUTPUT"
 
       - name: Require a populated Xcode compilation cache
@@ -285,7 +283,7 @@ jobs:
           repository: ${{ steps.source.outputs.OBS_SOURCE_REPOSITORY }}
           ref: ${{ steps.source.outputs.OBS_HEAD_SHA }}
           path: upstream
-          fetch-depth: 2
+          fetch-depth: 0
           submodules: recursive
           persist-credentials: false
 
@@ -307,16 +305,16 @@ jobs:
         id: restore
         run: echo "seconds=$(( $(date +%s) - ${{ steps.restore_start.outputs.started_at }} ))" >> "$GITHUB_OUTPUT"
 
-      - name: Install dependencies and generate the OBS Xcode project
-        env:
-          OBS_XCODE_PATH: ${{ steps.source.outputs.OBS_XCODE_PATH }}
-        run: ./scripts/prepare-obs.sh xcode actions-cache
+      - name: Select upstream's pinned Xcode
+        run: sudo xcode-select --switch "${{ steps.source.outputs.OBS_XCODE_PATH }}"
 
       - name: Build rolling commit
         id: build
         run: |
+          set -euo pipefail
           started_at="$(date +%s)"
-          ./scripts/run-obs-build.sh xcode benchmark-results/xcode-actions-cache-rolling.log
+          python3 ./scripts/run-benchmark-plan.py xcode --working-directory upstream \
+            2>&1 | tee benchmark-results/xcode-actions-cache-rolling.log
           echo "seconds=$(( $(date +%s) - started_at ))" >> "$GITHUB_OUTPUT"
 
       - name: Require native Xcode replay-hit evidence

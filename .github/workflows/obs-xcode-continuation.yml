@@ -72,7 +72,7 @@ jobs:
           repository: ${{ steps.source.outputs.OBS_SOURCE_REPOSITORY }}
           ref: ${{ env.OBS_SOURCE_SHA }}
           path: upstream
-          fetch-depth: 2
+          fetch-depth: 0
           submodules: recursive
           persist-credentials: false
 
@@ -96,16 +96,16 @@ jobs:
           echo "seconds=$(( $(date +%s) - ${{ steps.restore_start.outputs.started_at }} ))" >> "$GITHUB_OUTPUT"
           echo "bytes=$(( $(du -sk "$XCODE_CAS_PATH" | cut -f1) * 1024 ))" >> "$GITHUB_OUTPUT"
 
-      - name: Install dependencies and generate the OBS Xcode project
-        env:
-          OBS_XCODE_PATH: ${{ steps.source.outputs.OBS_XCODE_PATH }}
-        run: ./scripts/prepare-obs.sh xcode actions-cache
+      - name: Select upstream's pinned Xcode
+        run: sudo xcode-select --switch "${{ steps.source.outputs.OBS_XCODE_PATH }}"
 
       - name: Build continuation commit
         id: build
         run: |
+          set -euo pipefail
           started_at="$(date +%s)"
-          ./scripts/run-obs-build.sh xcode benchmark-results/xcode-actions-cache-continuation.log
+          python3 ./scripts/run-benchmark-plan.py xcode --working-directory upstream \
+            2>&1 | tee benchmark-results/xcode-actions-cache-continuation.log
           echo "seconds=$(( $(date +%s) - started_at ))" >> "$GITHUB_OUTPUT"
 
       - name: Require native Xcode replay-hit evidence
@@ -178,7 +178,7 @@ jobs:
           repository: ${{ steps.source.outputs.OBS_SOURCE_REPOSITORY }}
           ref: ${{ env.OBS_SOURCE_SHA }}
           path: upstream
-          fetch-depth: 2
+          fetch-depth: 0
           submodules: recursive
           persist-credentials: false
 
@@ -218,16 +218,13 @@ jobs:
         id: restore
         run: echo "seconds=$(( $(date +%s) - ${{ steps.restore_start.outputs.started_at }} ))" >> "$GITHUB_OUTPUT"
 
-      - name: Install dependencies and generate the OBS Xcode project
-        env:
-          OBS_XCODE_PATH: ${{ steps.source.outputs.OBS_XCODE_PATH }}
-        run: ./scripts/prepare-obs.sh xcode boringcache
-
       - name: Build continuation commit
         id: build
         run: |
+          set -euo pipefail
           started_at="$(date +%s)"
-          ./scripts/run-obs-build.sh xcode benchmark-results/xcode-boringcache-continuation.log
+          python3 ./scripts/run-benchmark-plan.py xcode --working-directory upstream \
+            2>&1 | tee benchmark-results/xcode-boringcache-continuation.log
           echo "seconds=$(( $(date +%s) - started_at ))" >> "$GITHUB_OUTPUT"
 
       - name: Require Xcode replay-hit diagnostics
