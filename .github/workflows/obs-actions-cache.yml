@@ -60,6 +60,12 @@ jobs:
       - name: Prepare base source
         run: ./scripts/prepare-source.sh base
 
+      - name: Install the upstream Linux build shell
+        run: |
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          echo "/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin" >> "$GITHUB_PATH"
+          brew install --quiet zsh
+
       - name: Install the benchmark ccache release
         run: ./scripts/install-ccache.sh
 
@@ -137,6 +143,12 @@ jobs:
 
       - name: Prepare rolling source
         run: ./scripts/prepare-source.sh rolling
+
+      - name: Install the upstream Linux build shell
+        run: |
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          echo "/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin" >> "$GITHUB_PATH"
+          brew install --quiet zsh
 
       - name: Install the benchmark ccache release
         run: ./scripts/install-ccache.sh

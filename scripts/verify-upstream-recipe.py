@@ -32,6 +32,8 @@ def main() -> int:
         local_workflows = "\n".join(path.read_text() for path in (ROOT / ".github/workflows").glob("obs-*.yml"))
         require("run-benchmark-plan.py ccache" in local_workflows, "ccache workflow bypasses the plan")
         require("run-benchmark-plan.py xcode" in local_workflows, "Xcode workflow bypasses the plan")
+        require(local_workflows.count("brew install --quiet zsh") == 4, "Linux workflows omit the upstream zsh setup")
+        require('mkdir -p "$root/benchmark-results"' in (ROOT / "scripts/prepare-source.sh").read_text(), "benchmark evidence directory is not prepared")
         require("prepare-obs.sh" not in local_workflows and "run-obs-build.sh" not in local_workflows, "retired local OBS reimplementation remains")
     except (KeyError, OSError, RuntimeError, tomllib.TOMLDecodeError) as error:
         print(f"OBS recipe mismatch: {error}", file=sys.stderr)

@@ -11,6 +11,7 @@ case "$phase" in
 esac
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+mkdir -p "$root/benchmark-results"
 # The path is resolved from the benchmark repository root at runtime.
 # shellcheck disable=SC1091
 source "$root/benchmark-source.env"
