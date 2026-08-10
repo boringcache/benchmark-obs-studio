@@ -31,7 +31,7 @@ case "$comparison_status" in
     next_head=""
     ;;
   ahead)
-    next_head="$(jq -r '.commits[0].sha // empty' <<<"$comparison")"
+    next_head=""
     ;;
   *)
     echo "Cannot advance ${source_repository} from ${current_head}: comparison is ${comparison_status}" >&2
@@ -39,14 +39,38 @@ case "$comparison_status" in
     ;;
 esac
 
+build_relevant_commit() {
+  local commit="$1"
+  local path
+
+  while IFS= read -r path; do
+    case "$path" in
+      *.c|*.cc|*.cpp|*.cxx|*.m|*.mm|*.h|*.hh|*.hpp|*.hxx|*.swift|*.cmake|CMakeLists.txt|*/CMakeLists.txt|CMakePresets.json|.github/scripts/*|.github/actions/build-obs/*)
+        return 0
+        ;;
+    esac
+  done < <(gh api "repos/${source_repository}/commits/${commit}" --jq '.files[].filename')
+
+  return 1
+}
+
+if [[ "$comparison_status" == "ahead" ]]; then
+  while IFS= read -r candidate; do
+    if build_relevant_commit "$candidate"; then
+      next_head="$candidate"
+      break
+    fi
+  done < <(jq -r '.commits[].sha' <<<"$comparison")
+fi
+
 if [[ -z "$next_head" ]]; then
   echo "No upstream changes"
   exit 0
 fi
 
 next_parent="$(gh api "repos/${source_repository}/commits/${next_head}" --jq '.parents[0].sha // empty')"
-if [[ "$next_parent" != "$current_head" ]]; then
-  echo "Expected ${next_head} to immediately follow ${current_head}, got parent ${next_parent}" >&2
+if [[ -z "$next_parent" ]]; then
+  echo "Cannot resolve the first parent of ${next_head}" >&2
   exit 1
 fi
 
@@ -55,7 +79,7 @@ head_key="${prefix}_HEAD_SHA"
 grep -q "^${base_key}=" "$env_file"
 grep -q "^${head_key}=" "$env_file"
 sed -i.bak \
-  -e "s/^${base_key}=.*/${base_key}=${current_head}/" \
+  -e "s/^${base_key}=.*/${base_key}=${next_parent}/" \
   -e "s/^${head_key}=.*/${head_key}=${next_head}/" \
   "$env_file"
 rm -f "${env_file}.bak"

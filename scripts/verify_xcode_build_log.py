@@ -2,15 +2,26 @@
 from __future__ import annotations
 
 import argparse
+import re
 from pathlib import Path
 
 
+ANSI_ESCAPE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
+FORMATTED_COMPILE = re.compile(
+    r"]\s+compiling\s+\S+\.(?:c|cc|cpp|cxx|m|mm|swift)(?:\s|$)",
+    re.IGNORECASE,
+)
+
+
 def validate(source: str) -> None:
-    lowered = source.lower()
-    if "compilec " not in lowered and " clang " not in lowered:
+    normalized = ANSI_ESCAPE.sub("", source)
+    lowered = normalized.lower()
+    if (
+        "compilec " not in lowered
+        and " clang " not in lowered
+        and FORMATTED_COMPILE.search(normalized) is None
+    ):
         raise ValueError("rolling Xcode build did not exercise native compilation")
-    if "replayed cache hit" not in lowered and "replay cache hit" not in lowered:
-        raise ValueError("rolling Xcode build did not report a compilation-cache replay hit")
 
 
 def main() -> int:

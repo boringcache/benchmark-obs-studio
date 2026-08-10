@@ -108,7 +108,7 @@ jobs:
             2>&1 | tee benchmark-results/xcode-actions-cache-continuation.log
           echo "seconds=$(( $(date +%s) - started_at ))" >> "$GITHUB_OUTPUT"
 
-      - name: Require native Xcode replay-hit evidence
+      - name: Require native Xcode build evidence
         run: ./scripts/verify_xcode_build_log.py benchmark-results/xcode-actions-cache-continuation.log
 
       - name: Capture evolved cache size
@@ -227,7 +227,7 @@ jobs:
             2>&1 | tee benchmark-results/xcode-boringcache-continuation.log
           echo "seconds=$(( $(date +%s) - started_at ))" >> "$GITHUB_OUTPUT"
 
-      - name: Require Xcode replay-hit diagnostics
+      - name: Require native Xcode build evidence
         run: ./scripts/verify_xcode_build_log.py benchmark-results/xcode-boringcache-continuation.log
 
       - name: Write continuation result

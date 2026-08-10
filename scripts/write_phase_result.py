@@ -38,11 +38,15 @@ def classification(surface: str, strategy: str, phase: str) -> dict[str, Any]:
         }
 
     native_gate = "remote native cache evidence" if strategy == "boringcache" else "exact-key cache restore"
+    if surface == "xcode":
+        validity_reason = f"{native_gate} and upstream-formatted native compilation gates passed"
+    else:
+        validity_reason = f"{native_gate} and ccache replay-hit gates passed"
     return {
         "sample_valid": True,
         "reporting_mode": "commit-build",
-        "reporting_reason": "adjacent real C++ commit reuses the parent commit's compiler cache",
-        "validity_reason": f"{native_gate} and {surface} replay-hit gates passed",
+        "reporting_reason": "adjacent upstream source/build commit is measured after restoring the parent compiler-cache cohort",
+        "validity_reason": validity_reason,
         "cache_import_status": "hit",
     }
 

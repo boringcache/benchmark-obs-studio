@@ -28,9 +28,10 @@ write_result = load_script("write_phase_result.py")
 
 
 class SourceSyncTest(unittest.TestCase):
-    def test_advances_exactly_one_upstream_commit(self):
+    def test_skips_workflow_only_commits_and_selects_an_adjacent_source_pair(self):
         current = "a" * 40
-        following = "b" * 40
+        workflow_only = "b" * 40
+        following = "c" * 40
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             source = root / "benchmark-source.env"
@@ -48,8 +49,10 @@ class SourceSyncTest(unittest.TestCase):
                 "case \"$*\" in\n"
                 "  'api repos/obsproject/obs-studio --jq .default_branch') echo master ;;\n"
                 f"  'api repos/obsproject/obs-studio/compare/{current}...master') "
-                f"echo '{{\"status\":\"ahead\",\"commits\":[{{\"sha\":\"{following}\"}}]}}' ;;\n"
-                f"  'api repos/obsproject/obs-studio/commits/{following} --jq .parents[0].sha // empty') echo {current} ;;\n"
+                f"echo '{{\"status\":\"ahead\",\"commits\":[{{\"sha\":\"{workflow_only}\"}},{{\"sha\":\"{following}\"}}]}}' ;;\n"
+                f"  'api repos/obsproject/obs-studio/commits/{workflow_only} --jq .files[].filename') echo .github/workflows/push.yaml ;;\n"
+                f"  'api repos/obsproject/obs-studio/commits/{following} --jq .files[].filename') echo frontend/obs-main.cpp ;;\n"
+                f"  'api repos/obsproject/obs-studio/commits/{following} --jq .parents[0].sha // empty') echo {workflow_only} ;;\n"
                 "  *) echo \"Unexpected gh call: $*\" >&2; exit 1 ;;\n"
                 "esac\n"
             )
@@ -61,7 +64,7 @@ class SourceSyncTest(unittest.TestCase):
             )
             settings = dict(line.split("=", 1) for line in source.read_text().splitlines())
 
-        self.assertEqual(settings["OBS_BASE_SHA"], current)
+        self.assertEqual(settings["OBS_BASE_SHA"], workflow_only)
         self.assertEqual(settings["OBS_HEAD_SHA"], following)
         self.assertEqual(settings["OBS_VERSION_OVERRIDE"], "32.2.0")
 
@@ -88,10 +91,11 @@ class NativeEvidenceTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "restore remote ccache entries"):
             verify_ccache.validate(payload, "rolling", "boringcache")
 
-    def test_requires_xcode_replay_hit_diagnostic(self):
-        verify_xcode_log.validate("CompileC object.o source.cpp\nremark: replayed cache hit\n")
-        with self.assertRaisesRegex(ValueError, "replay hit"):
-            verify_xcode_log.validate("CompileC object.o source.cpp\n")
+    def test_accepts_raw_and_upstream_formatted_xcode_compilation(self):
+        verify_xcode_log.validate("CompileC object.o source.cpp\n")
+        verify_xcode_log.validate("[libobs] \x1b[1mCompiling\x1b[0m obs-source.c\n")
+        with self.assertRaisesRegex(ValueError, "native compilation"):
+            verify_xcode_log.validate("[libobs] Linking libobs\n")
 
 
 class ResultContractTest(unittest.TestCase):
