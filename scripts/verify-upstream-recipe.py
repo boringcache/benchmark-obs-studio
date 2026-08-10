@@ -24,7 +24,12 @@ def main() -> int:
 
         workflow = (ROOT / "upstream/.github/workflows/build-project.yaml").read_text()
         action = (ROOT / "upstream/.github/actions/build-obs/action.yaml").read_text()
-        for fragment in ("os: [ubuntu-24.04, ubuntu-26.04]", "target: [arm64, x86_64]", "config:RelWithDebInfo", "Xcode_26.5.app"):
+        require(
+            "os: [ubuntu-26.04]" in workflow
+            or "os: [ubuntu-24.04, ubuntu-26.04]" in workflow,
+            "upstream Ubuntu build matrix changed",
+        )
+        for fragment in ("target: [arm64, x86_64]", "config:RelWithDebInfo", "Xcode_26.5.app"):
             require(fragment in workflow, f"upstream build matrix changed: {fragment}")
         for fragment in (".github/scripts/build-macos ${build_args}", ".github/scripts/build-ubuntu ${build_args}", "--target macos-${{ inputs.target }}", "--target ubuntu-${{ inputs.target }}"):
             require(fragment in action, f"upstream build wrapper changed: {fragment}")
@@ -32,6 +37,7 @@ def main() -> int:
         local_workflows = "\n".join(path.read_text() for path in (ROOT / ".github/workflows").glob("obs-*.yml"))
         require("run-benchmark-plan.py ccache" in local_workflows, "ccache workflow bypasses the plan")
         require("run-benchmark-plan.py xcode" in local_workflows, "Xcode workflow bypasses the plan")
+        require(local_workflows.count("'ubuntu-26.04'") == 4, "ccache lanes do not follow upstream's supported Ubuntu runner")
         require(local_workflows.count("brew install --quiet zsh") == 4, "Linux workflows omit the upstream zsh setup")
         require('mkdir -p "$root/benchmark-results"' in (ROOT / "scripts/prepare-source.sh").read_text(), "benchmark evidence directory is not prepared")
         require("prepare-obs.sh" not in local_workflows and "run-obs-build.sh" not in local_workflows, "retired local OBS reimplementation remains")

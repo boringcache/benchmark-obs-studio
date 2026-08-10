@@ -46,7 +46,7 @@ jobs:
   ccache-base:
     name: BoringCache OBS ccache cold
     if: inputs.source_run_id == '' && (inputs.runner_label == '' || github.ref_name == 'main')
-    runs-on: ${{ github.event_name == 'workflow_dispatch' && github.ref_name == 'main' && inputs.runner_label || 'ubuntu-24.04' }}
+    runs-on: ${{ github.event_name == 'workflow_dispatch' && github.ref_name == 'main' && inputs.runner_label || 'ubuntu-26.04' }}
     timeout-minutes: 120
     env:
       CCACHE_DIR: ${{ github.workspace }}/.boringcache-local-ccache
@@ -165,7 +165,7 @@ jobs:
   ccache-rolling:
     name: BoringCache OBS ccache commit
     needs: ccache-base
-    runs-on: ${{ github.event_name == 'workflow_dispatch' && github.ref_name == 'main' && inputs.runner_label || 'ubuntu-24.04' }}
+    runs-on: ${{ github.event_name == 'workflow_dispatch' && github.ref_name == 'main' && inputs.runner_label || 'ubuntu-26.04' }}
     timeout-minutes: 120
     env:
       CCACHE_DIR: ${{ github.workspace }}/.boringcache-local-ccache
