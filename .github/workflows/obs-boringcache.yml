@@ -102,7 +102,7 @@ jobs:
           trust-policy: publish
           setup: none
           mode: ccache
-          ccache-version: 4.13.6
+          ccache-version: 4.14
           working-directory: ./upstream
           fail-on-cache-error: true
           metadata-hints: |
@@ -218,7 +218,7 @@ jobs:
           trust-policy: restore
           setup: none
           mode: ccache
-          ccache-version: 4.13.6
+          ccache-version: 4.14
           working-directory: ./upstream
           fail-on-cache-miss: true
           fail-on-cache-error: true
