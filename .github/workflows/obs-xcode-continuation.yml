@@ -197,19 +197,13 @@ jobs:
 
       - name: Configure evolving BoringCache Xcode adapter
         id: cache
-        uses: boringcache/one@20202f4c4b789cdee581ae3f117dfafb8293b19c # v1 / 1.20.0
+        uses: boringcache/one@4d152565a19570e669c54269f537ad2394bf1fe5 # v1.20.1
         with:
           cli-version: ${{ inputs.cli_version }}
           trust-policy: publish
-          setup: none
           mode: xcode
           working-directory: ./upstream
           fail-on-cache-error: true
-          metadata-hints: |
-            benchmark=obs-studio-xcode-continuation
-            phase=commit
-            generation=${{ inputs.generation }}
-            tool=xcode
         env:
           BORINGCACHE_RESTORE_TOKEN: ${{ secrets.BORINGCACHE_RESTORE_TOKEN }}
           BORINGCACHE_SAVE_TOKEN: ${{ secrets.BORINGCACHE_SAVE_TOKEN }}

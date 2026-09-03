@@ -105,6 +105,10 @@ class ResultContractTest(unittest.TestCase):
         self.assertEqual(rolling["reporting_mode"], "commit-build")
         self.assertEqual(rolling["cache_import_status"], "hit")
 
+    def test_action_cache_key_comes_from_the_evidence_file(self):
+        evidence = {"phases": {"restore": {"cache_tag": "obs-ccache-r42"}}}
+        self.assertEqual(write_result.action_cache_key(evidence), "obs-ccache-r42")
+
 
 class WorkflowContractTest(unittest.TestCase):
     def test_source_updates_dispatch_both_current_provider_workflows(self):
@@ -124,7 +128,10 @@ class WorkflowContractTest(unittest.TestCase):
         self.assertEqual(candidate.count("run-benchmark-plan.py"), 4)
         self.assertEqual(candidate.count("boringcache/one@20202f4c4b789cdee581ae3f117dfafb8293b19c"), 4)
         self.assertEqual(candidate.count("cli-version: ${{ inputs.cli_version }}"), 4)
-        self.assertEqual(candidate.count("setup: none"), 4)
+        self.assertEqual(candidate.count("Install the benchmark ccache release"), 2)
+        self.assertNotIn("setup: none", candidate)
+        self.assertNotIn("ccache-version:", candidate)
+        self.assertNotIn("metadata-hints:", candidate)
         self.assertEqual(candidate.count("working-directory: ./upstream"), 4)
         self.assertNotIn("BORINGCACHE_API_TOKEN", candidate)
 
