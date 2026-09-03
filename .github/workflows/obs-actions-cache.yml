@@ -1,0 +1,352 @@
+name: "OBS Studio Actions Cache benchmark"
+run-name: >-
+  ${{ github.event_name == 'pull_request' && format('OBS validation | PR #{0}', github.event.pull_request.number) || github.event_name == 'push' && 'OBS rolling | Upstream update' || format('OBS Actions Cache | Manual dispatch ({0})', github.ref_name) }}
+
+on:
+  push:
+    branches: [main]
+    paths: ["benchmark-source.env"]
+  workflow_dispatch:
+    inputs:
+      runner_label:
+        description: "Optional Linux runner label for a manual main-branch experiment."
+        required: false
+        default: ""
+        type: string
+  pull_request:
+    paths: [".github/workflows/obs-actions-cache.yml", "benchmark-source.env", "scripts/**"]
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: benchmark-obs-actions-cache-${{ github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  BENCHMARK_ID: obs-studio-compiler-cache
+
+jobs:
+  ccache-base:
+    name: GitHub Actions OBS ccache cold
+    if: inputs.runner_label == '' || github.ref_name == 'main'
+    runs-on: ${{ github.event_name == 'workflow_dispatch' && github.ref_name == 'main' && inputs.runner_label || 'ubuntu-26.04' }}
+    timeout-minutes: 120
+    env:
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_BASEDIR: ${{ github.workspace }}/upstream
+      CCACHE_NOHASHDIR: "1"
+      CCACHE_COMPILERCHECK: content
+      CCACHE_STATSLOG: ${{ github.workspace }}/.ccache-stats.log
+    steps:
+      - name: Checkout benchmark repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Read pinned source
+        id: source
+        run: sed '/^$/d' benchmark-source.env >> "$GITHUB_OUTPUT"
+
+      - name: Checkout pinned OBS source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: ${{ steps.source.outputs.OBS_SOURCE_REPOSITORY }}
+          ref: ${{ steps.source.outputs.OBS_HEAD_SHA }}
+          path: upstream
+          fetch-depth: 0
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Prepare base source
+        run: ./scripts/prepare-source.sh base
+
+      - name: Install the upstream Linux build shell
+        run: |
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          echo "/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin" >> "$GITHUB_PATH"
+          brew install --quiet zsh
+
+      - name: Install the benchmark ccache release
+        run: ./scripts/install-ccache.sh
+
+      - name: Build base commit
+        id: build
+        run: |
+          set -euo pipefail
+          started_at="$(date +%s)"
+          python3 ./scripts/run-benchmark-plan.py ccache --working-directory upstream \
+            2>&1 | tee benchmark-results/ccache-actions-cache-base.log
+          echo "seconds=$(( $(date +%s) - started_at ))" >> "$GITHUB_OUTPUT"
+
+      - name: Capture and verify ccache evidence
+        run: |
+          ccache --print-log-stats --format=json > benchmark-results/ccache-actions-cache-base-native.json
+          ./scripts/verify_ccache_evidence.py \
+            --path benchmark-results/ccache-actions-cache-base-native.json \
+            --phase base \
+            --strategy actions-cache
+
+      - name: Save ccache directory
+        uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          key: gha-ccache-r${{ github.run_id }}-a${{ github.run_attempt }}
+          path: .ccache
+
+      - name: Write base result
+        run: |
+          ./scripts/write_phase_result.py \
+            --surface ccache \
+            --strategy actions-cache \
+            --phase base \
+            --source-sha "${{ steps.source.outputs.OBS_BASE_SHA }}" \
+            --restore-seconds 0 \
+            --build-seconds "${{ steps.build.outputs.seconds }}" \
+            --cache-key "gha-ccache-r${{ github.run_id }}-a${{ github.run_attempt }}" \
+            --native-evidence benchmark-results/ccache-actions-cache-base-native.json
+
+      - name: Upload base result
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: phase-${{ env.BENCHMARK_ID }}-ccache-actions-cache-base
+          path: benchmark-results
+          if-no-files-found: error
+          retention-days: 30
+
+  ccache-rolling:
+    name: GitHub Actions OBS ccache commit
+    needs: ccache-base
+    runs-on: ${{ github.event_name == 'workflow_dispatch' && github.ref_name == 'main' && inputs.runner_label || 'ubuntu-26.04' }}
+    timeout-minutes: 120
+    env:
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_BASEDIR: ${{ github.workspace }}/upstream
+      CCACHE_NOHASHDIR: "1"
+      CCACHE_COMPILERCHECK: content
+      CCACHE_STATSLOG: ${{ github.workspace }}/.ccache-stats.log
+    steps:
+      - name: Checkout benchmark repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Read pinned source
+        id: source
+        run: sed '/^$/d' benchmark-source.env >> "$GITHUB_OUTPUT"
+
+      - name: Checkout pinned OBS source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: ${{ steps.source.outputs.OBS_SOURCE_REPOSITORY }}
+          ref: ${{ steps.source.outputs.OBS_HEAD_SHA }}
+          path: upstream
+          fetch-depth: 0
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Prepare rolling source
+        run: ./scripts/prepare-source.sh rolling
+
+      - name: Install the upstream Linux build shell
+        run: |
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          echo "/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin" >> "$GITHUB_PATH"
+          brew install --quiet zsh
+
+      - name: Install the benchmark ccache release
+        run: ./scripts/install-ccache.sh
+
+      - name: Start cache restore timing
+        id: restore_start
+        run: echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore ccache directory
+        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          key: gha-ccache-r${{ github.run_id }}-a${{ github.run_attempt }}
+          path: .ccache
+          fail-on-cache-miss: true
+
+      - name: Capture cache restore timing
+        id: restore
+        run: echo "seconds=$(( $(date +%s) - ${{ steps.restore_start.outputs.started_at }} ))" >> "$GITHUB_OUTPUT"
+
+      - name: Build rolling commit
+        id: build
+        run: |
+          set -euo pipefail
+          started_at="$(date +%s)"
+          python3 ./scripts/run-benchmark-plan.py ccache --working-directory upstream \
+            2>&1 | tee benchmark-results/ccache-actions-cache-rolling.log
+          echo "seconds=$(( $(date +%s) - started_at ))" >> "$GITHUB_OUTPUT"
+
+      - name: Capture and verify ccache evidence
+        run: |
+          ccache --print-log-stats --format=json > benchmark-results/ccache-actions-cache-rolling-native.json
+          ./scripts/verify_ccache_evidence.py \
+            --path benchmark-results/ccache-actions-cache-rolling-native.json \
+            --phase rolling \
+            --strategy actions-cache
+
+      - name: Write rolling result
+        run: |
+          ./scripts/write_phase_result.py \
+            --surface ccache \
+            --strategy actions-cache \
+            --phase rolling \
+            --source-sha "${{ steps.source.outputs.OBS_HEAD_SHA }}" \
+            --restore-seconds "${{ steps.restore.outputs.seconds }}" \
+            --build-seconds "${{ steps.build.outputs.seconds }}" \
+            --cache-key "gha-ccache-r${{ github.run_id }}-a${{ github.run_attempt }}" \
+            --native-evidence benchmark-results/ccache-actions-cache-rolling-native.json
+
+      - name: Upload rolling result
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: phase-${{ env.BENCHMARK_ID }}-ccache-actions-cache-rolling
+          path: benchmark-results
+          if-no-files-found: error
+          retention-days: 30
+
+  xcode-base:
+    name: GitHub Actions OBS Xcode cold
+    runs-on: macos-26
+    timeout-minutes: 120
+    env:
+      XCODE_CAS_PATH: ${{ github.workspace }}/.xcode-compilation-cache
+      OBS_BASELINE_DERIVED_DATA_PATH: ${{ github.workspace }}/.xcode-derived-data
+    steps:
+      - name: Checkout benchmark repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Read pinned source
+        id: source
+        run: sed '/^$/d' benchmark-source.env >> "$GITHUB_OUTPUT"
+
+      - name: Checkout pinned OBS source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: ${{ steps.source.outputs.OBS_SOURCE_REPOSITORY }}
+          ref: ${{ steps.source.outputs.OBS_HEAD_SHA }}
+          path: upstream
+          fetch-depth: 0
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Prepare base source
+        run: ./scripts/prepare-source.sh base
+
+      - name: Select upstream's pinned Xcode
+        run: sudo xcode-select --switch "${{ steps.source.outputs.OBS_XCODE_PATH }}"
+
+      - name: Build base commit
+        id: build
+        run: |
+          set -euo pipefail
+          started_at="$(date +%s)"
+          python3 ./scripts/run-benchmark-plan.py xcode --working-directory upstream \
+            2>&1 | tee benchmark-results/xcode-actions-cache-base.log
+          echo "seconds=$(( $(date +%s) - started_at ))" >> "$GITHUB_OUTPUT"
+
+      - name: Require a populated Xcode compilation cache
+        run: test -n "$(find "$XCODE_CAS_PATH" -type f -print -quit)"
+
+      - name: Save Xcode compilation cache
+        uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          key: gha-xcode-r${{ github.run_id }}-a${{ github.run_attempt }}
+          path: .xcode-compilation-cache
+
+      - name: Write base result
+        run: |
+          ./scripts/write_phase_result.py \
+            --surface xcode \
+            --strategy actions-cache \
+            --phase base \
+            --source-sha "${{ steps.source.outputs.OBS_BASE_SHA }}" \
+            --restore-seconds 0 \
+            --build-seconds "${{ steps.build.outputs.seconds }}" \
+            --cache-key "gha-xcode-r${{ github.run_id }}-a${{ github.run_attempt }}"
+
+      - name: Upload base result
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: phase-${{ env.BENCHMARK_ID }}-xcode-actions-cache-base
+          path: benchmark-results
+          if-no-files-found: error
+          retention-days: 30
+
+  xcode-rolling:
+    name: GitHub Actions OBS Xcode commit
+    needs: xcode-base
+    runs-on: macos-26
+    timeout-minutes: 120
+    env:
+      XCODE_CAS_PATH: ${{ github.workspace }}/.xcode-compilation-cache
+      OBS_BASELINE_DERIVED_DATA_PATH: ${{ github.workspace }}/.xcode-derived-data
+    steps:
+      - name: Checkout benchmark repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Read pinned source
+        id: source
+        run: sed '/^$/d' benchmark-source.env >> "$GITHUB_OUTPUT"
+
+      - name: Checkout pinned OBS source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: ${{ steps.source.outputs.OBS_SOURCE_REPOSITORY }}
+          ref: ${{ steps.source.outputs.OBS_HEAD_SHA }}
+          path: upstream
+          fetch-depth: 0
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Prepare rolling source
+        run: ./scripts/prepare-source.sh rolling
+
+      - name: Start cache restore timing
+        id: restore_start
+        run: echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore Xcode compilation cache
+        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          key: gha-xcode-r${{ github.run_id }}-a${{ github.run_attempt }}
+          path: .xcode-compilation-cache
+          fail-on-cache-miss: true
+
+      - name: Capture cache restore timing
+        id: restore
+        run: echo "seconds=$(( $(date +%s) - ${{ steps.restore_start.outputs.started_at }} ))" >> "$GITHUB_OUTPUT"
+
+      - name: Select upstream's pinned Xcode
+        run: sudo xcode-select --switch "${{ steps.source.outputs.OBS_XCODE_PATH }}"
+
+      - name: Build rolling commit
+        id: build
+        run: |
+          set -euo pipefail
+          started_at="$(date +%s)"
+          python3 ./scripts/run-benchmark-plan.py xcode --working-directory upstream \
+            2>&1 | tee benchmark-results/xcode-actions-cache-rolling.log
+          echo "seconds=$(( $(date +%s) - started_at ))" >> "$GITHUB_OUTPUT"
+
+      - name: Require native Xcode build evidence
+        run: ./scripts/verify_xcode_build_log.py benchmark-results/xcode-actions-cache-rolling.log
+
+      - name: Write rolling result
+        run: |
+          ./scripts/write_phase_result.py \
+            --surface xcode \
+            --strategy actions-cache \
+            --phase rolling \
+            --source-sha "${{ steps.source.outputs.OBS_HEAD_SHA }}" \
+            --restore-seconds "${{ steps.restore.outputs.seconds }}" \
+            --build-seconds "${{ steps.build.outputs.seconds }}" \
+            --cache-key "gha-xcode-r${{ github.run_id }}-a${{ github.run_attempt }}"
+
+      - name: Upload rolling result
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: phase-${{ env.BENCHMARK_ID }}-xcode-actions-cache-rolling
+          path: benchmark-results
+          if-no-files-found: error
+          retention-days: 30
