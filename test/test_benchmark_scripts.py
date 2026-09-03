@@ -126,7 +126,7 @@ class WorkflowContractTest(unittest.TestCase):
         candidate = (ROOT / ".github/workflows/obs-boringcache.yml").read_text()
         self.assertEqual(baseline.count("run-benchmark-plan.py"), 4)
         self.assertEqual(candidate.count("run-benchmark-plan.py"), 4)
-        self.assertEqual(candidate.count("boringcache/one@20202f4c4b789cdee581ae3f117dfafb8293b19c"), 4)
+        self.assertEqual(candidate.count("boringcache/one@4d152565a19570e669c54269f537ad2394bf1fe5"), 4)
         self.assertEqual(candidate.count("cli-version: ${{ inputs.cli_version }}"), 4)
         self.assertEqual(candidate.count("Install the benchmark ccache release"), 2)
         self.assertNotIn("setup: none", candidate)
