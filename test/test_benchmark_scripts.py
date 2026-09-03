@@ -122,7 +122,7 @@ class WorkflowContractTest(unittest.TestCase):
         candidate = (ROOT / ".github/workflows/obs-boringcache.yml").read_text()
         self.assertEqual(baseline.count("run-benchmark-plan.py"), 4)
         self.assertEqual(candidate.count("run-benchmark-plan.py"), 4)
-        self.assertEqual(candidate.count("boringcache/one@aac19c43035c9d77cfc2573f663d35ea3fce2868"), 4)
+        self.assertEqual(candidate.count("boringcache/one@20202f4c4b789cdee581ae3f117dfafb8293b19c"), 4)
         self.assertEqual(candidate.count("cli-version: ${{ inputs.cli_version }}"), 4)
         self.assertEqual(candidate.count("setup: none"), 4)
         self.assertEqual(candidate.count("working-directory: ./upstream"), 4)
