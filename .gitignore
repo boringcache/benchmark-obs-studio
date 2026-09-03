@@ -1,7 +1,0 @@
-benchmark-phases/
-benchmark-results/
-upstream/
-.boringcache-local-ccache/
-.ccache-stats.log
-.ruff_cache/
-__pycache__/
