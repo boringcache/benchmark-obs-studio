@@ -17,6 +17,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--restore-seconds", type=int, required=True)
     parser.add_argument("--build-seconds", type=int, required=True)
     parser.add_argument("--cache-key", default="")
+    parser.add_argument("--action-evidence")
     parser.add_argument("--native-evidence")
     parser.add_argument("--output-dir", default="benchmark-results")
     return parser.parse_args()
@@ -60,6 +61,19 @@ def load_native_evidence(path: str | None) -> dict[str, Any] | None:
     return json.loads(evidence_path.read_text())
 
 
+def action_cache_key(payload: dict[str, Any] | None) -> str:
+    if not payload:
+        return ""
+    phases = payload.get("phases")
+    if not isinstance(phases, dict):
+        return ""
+    restore = phases.get("restore")
+    if not isinstance(restore, dict):
+        return ""
+    cache_tag = restore.get("cache_tag")
+    return cache_tag.strip() if isinstance(cache_tag, str) else ""
+
+
 def ccache_summary(payload: dict[str, Any] | None) -> dict[str, Any] | None:
     if payload is None:
         return None
@@ -79,6 +93,7 @@ def ccache_summary(payload: dict[str, Any] | None) -> dict[str, Any] | None:
 
 def main() -> int:
     args = parse_args()
+    action = load_native_evidence(args.action_evidence)
     native = load_native_evidence(args.native_evidence)
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -99,7 +114,7 @@ def main() -> int:
             "end_to_end_seconds": args.restore_seconds + args.build_seconds,
         },
         "classification": classification(args.surface, args.strategy, args.phase),
-        "cache": {"key": args.cache_key or None},
+        "cache": {"key": args.cache_key or action_cache_key(action) or None},
         "native": ccache_summary(native) if args.surface == "ccache" else None,
         "github": {
             "repository": os.environ.get("GITHUB_REPOSITORY"),

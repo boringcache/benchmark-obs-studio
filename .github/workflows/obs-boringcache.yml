@@ -90,6 +90,9 @@ jobs:
           echo "/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin" >> "$GITHUB_PATH"
           brew install --quiet zsh
 
+      - name: Install the benchmark ccache release
+        run: ./scripts/install-ccache.sh
+
       - name: Start cache setup timing
         id: restore_start
         run: echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
@@ -100,15 +103,9 @@ jobs:
         with:
           cli-version: ${{ inputs.cli_version }}
           trust-policy: publish
-          setup: none
           mode: ccache
-          ccache-version: 4.14
           working-directory: ./upstream
           fail-on-cache-error: true
-          metadata-hints: |
-            benchmark=obs-studio-compiler-cache
-            phase=cold
-            tool=ccache
         env:
           BORINGCACHE_RESTORE_TOKEN: ${{ secrets.BORINGCACHE_RESTORE_TOKEN }}
           BORINGCACHE_SAVE_TOKEN: ${{ secrets.BORINGCACHE_SAVE_TOKEN }}
@@ -143,7 +140,7 @@ jobs:
             --source-sha "${{ steps.source.outputs.OBS_BASE_SHA }}" \
             --restore-seconds "${{ steps.restore.outputs.seconds }}" \
             --build-seconds "${{ steps.build.outputs.seconds }}" \
-            --cache-key "${{ steps.cache.outputs.cache-tag }}" \
+            --action-evidence "${{ steps.cache.outputs.evidence-path }}" \
             --native-evidence benchmark-results/ccache-boringcache-base-native.json
 
       - name: Upload base result
@@ -206,6 +203,9 @@ jobs:
           echo "/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin" >> "$GITHUB_PATH"
           brew install --quiet zsh
 
+      - name: Install the benchmark ccache release
+        run: ./scripts/install-ccache.sh
+
       - name: Start cache setup timing
         id: restore_start
         run: echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
@@ -216,16 +216,10 @@ jobs:
         with:
           cli-version: ${{ inputs.cli_version }}
           trust-policy: restore
-          setup: none
           mode: ccache
-          ccache-version: 4.14
           working-directory: ./upstream
           fail-on-cache-miss: true
           fail-on-cache-error: true
-          metadata-hints: |
-            benchmark=obs-studio-compiler-cache
-            phase=commit
-            tool=ccache
         env:
           BORINGCACHE_RESTORE_TOKEN: ${{ secrets.BORINGCACHE_RESTORE_TOKEN }}
 
@@ -259,7 +253,7 @@ jobs:
             --source-sha "${{ steps.source.outputs.OBS_HEAD_SHA }}" \
             --restore-seconds "${{ steps.restore.outputs.seconds }}" \
             --build-seconds "${{ steps.build.outputs.seconds }}" \
-            --cache-key "${{ steps.cache.outputs.cache-tag }}" \
+            --action-evidence "${{ steps.cache.outputs.evidence-path }}" \
             --native-evidence benchmark-results/ccache-boringcache-rolling-native.json
 
       - name: Upload rolling result
@@ -325,14 +319,9 @@ jobs:
         with:
           cli-version: ${{ inputs.cli_version }}
           trust-policy: publish
-          setup: none
           mode: xcode
           working-directory: ./upstream
           fail-on-cache-error: true
-          metadata-hints: |
-            benchmark=obs-studio-compiler-cache
-            phase=cold
-            tool=xcode
         env:
           BORINGCACHE_RESTORE_TOKEN: ${{ secrets.BORINGCACHE_RESTORE_TOKEN }}
           BORINGCACHE_SAVE_TOKEN: ${{ secrets.BORINGCACHE_SAVE_TOKEN }}
@@ -359,7 +348,7 @@ jobs:
             --source-sha "${{ steps.source.outputs.OBS_BASE_SHA }}" \
             --restore-seconds "${{ steps.restore.outputs.seconds }}" \
             --build-seconds "${{ steps.build.outputs.seconds }}" \
-            --cache-key "${{ steps.cache.outputs.cache-tag }}"
+            --action-evidence "${{ steps.cache.outputs.evidence-path }}"
 
       - name: Upload base result
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -427,15 +416,10 @@ jobs:
         with:
           cli-version: ${{ inputs.cli_version }}
           trust-policy: restore
-          setup: none
           mode: xcode
           working-directory: ./upstream
           fail-on-cache-miss: true
           fail-on-cache-error: true
-          metadata-hints: |
-            benchmark=obs-studio-compiler-cache
-            phase=commit
-            tool=xcode
         env:
           BORINGCACHE_RESTORE_TOKEN: ${{ secrets.BORINGCACHE_RESTORE_TOKEN }}
 
@@ -464,7 +448,7 @@ jobs:
             --source-sha "${{ steps.source.outputs.OBS_HEAD_SHA }}" \
             --restore-seconds "${{ steps.restore.outputs.seconds }}" \
             --build-seconds "${{ steps.build.outputs.seconds }}" \
-            --cache-key "${{ steps.cache.outputs.cache-tag }}"
+            --action-evidence "${{ steps.cache.outputs.evidence-path }}"
 
       - name: Upload rolling result
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
