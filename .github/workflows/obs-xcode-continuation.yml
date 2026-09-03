@@ -197,7 +197,7 @@ jobs:
 
       - name: Configure evolving BoringCache Xcode adapter
         id: cache
-        uses: boringcache/one@20202f4c4b789cdee581ae3f117dfafb8293b19c # v1 / 1.20.0
+        uses: boringcache/one@a0d7df62e211635167ef6dc568c0db0c3a8e079f # one-canary-4c8e31ff2674
         with:
           cli-version: ${{ inputs.cli_version }}
           trust-policy: publish
