@@ -9,6 +9,7 @@ if [[ ! "$source_sha" =~ ^[0-9a-f]{40}$ ]] || [[ ! "$parent_sha" =~ ^[0-9a-f]{40
 fi
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+mkdir -p "$root/benchmark-results"
 upstream="$root/upstream"
 
 git -C "$upstream" cat-file -e "${source_sha}^{commit}"
