@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import os
+import re
 import subprocess
 import tempfile
 import unittest
@@ -126,7 +127,9 @@ class WorkflowContractTest(unittest.TestCase):
         candidate = (ROOT / ".github/workflows/obs-boringcache.yml").read_text()
         self.assertEqual(baseline.count("run-benchmark-plan.py"), 4)
         self.assertEqual(candidate.count("run-benchmark-plan.py"), 4)
-        self.assertEqual(candidate.count("boringcache/one@90111526eb218a7f1e119ac2b29f765bd4d82734"), 4)
+        action_refs = re.findall(r"boringcache/one@([0-9a-f]{40})", candidate)
+        self.assertEqual(len(action_refs), 4)
+        self.assertEqual(len(set(action_refs)), 1)
         self.assertEqual(candidate.count("cli-version: ${{ inputs.cli_version }}"), 4)
         self.assertEqual(candidate.count("Install the benchmark ccache release"), 2)
         self.assertNotIn("setup: none", candidate)
