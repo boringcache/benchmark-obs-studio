@@ -6,9 +6,9 @@ ccache_archive="ccache-${ccache_version}-linux-x86_64-glibc.tar.gz"
 ccache_sha256=c64760b0b85ba86068f4cd162dc42e2dc39c6f46b0cb8c1990dfccbec7a1fed0
 ccache_url="https://github.com/ccache/ccache/releases/download/v${ccache_version}/${ccache_archive}"
 
-storage_version=0.9
+storage_version=0.10
 storage_archive="ccache-storage-http-go-${storage_version}-linux-amd64.tar.gz"
-storage_sha256=875dbf6d575d06e4c4492f1ba639beb68530bc23382031a6bacc767cded9f463
+storage_sha256=88963ef2cc21ca588145d46bcb02b8295275975ed75696eedf2cdb0e9543edd0
 storage_url="https://github.com/ccache/ccache-storage-http-go/releases/download/v${storage_version}/${storage_archive}"
 
 install_root="${RUNNER_TEMP:?RUNNER_TEMP is required}/ccache-${ccache_version}"

@@ -13,6 +13,12 @@ on:
         required: false
         default: ""
         type: string
+      cache_tool:
+        description: "Select one tool for a focused retry, or both tools."
+        required: false
+        type: choice
+        options: [all, ccache, xcode]
+        default: all
       source_run_id:
         description: "Optional proof run whose Xcode cache cohort should be reused"
         required: false
@@ -45,7 +51,7 @@ env:
 jobs:
   ccache-base:
     name: BoringCache OBS ccache cold
-    if: inputs.source_run_id == '' && (inputs.runner_label == '' || github.ref_name == 'main')
+    if: inputs.cache_tool != 'xcode' && inputs.source_run_id == '' && (inputs.runner_label == '' || github.ref_name == 'main')
     runs-on: ${{ github.event_name == 'workflow_dispatch' && github.ref_name == 'main' && inputs.runner_label || 'ubuntu-26.04' }}
     timeout-minutes: 120
     env:
@@ -274,7 +280,7 @@ jobs:
 
   xcode-base:
     name: BoringCache OBS Xcode cold
-    if: inputs.source_run_id == ''
+    if: inputs.cache_tool != 'ccache' && inputs.source_run_id == ''
     runs-on: macos-26
     timeout-minutes: 120
     steps:
@@ -370,7 +376,7 @@ jobs:
     name: BoringCache OBS Xcode commit
     needs: xcode-base
     if: >-
-      always() &&
+      always() && inputs.cache_tool != 'ccache' &&
       (needs.xcode-base.result == 'success' || inputs.source_run_id != '')
     runs-on: macos-26
     timeout-minutes: 120
