@@ -70,6 +70,12 @@ def result_payload(args: argparse.Namespace) -> dict[str, Any]:
             "run_id": os.environ.get("GITHUB_RUN_ID"),
             "run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT"),
             "job": os.environ.get("GITHUB_JOB"),
+            "runner_os": os.environ.get("RUNNER_OS"),
+            "runner_arch": os.environ.get("RUNNER_ARCH"),
+            "runner_name": os.environ.get("RUNNER_NAME"),
+            "runner_environment": os.environ.get("RUNNER_ENVIRONMENT"),
+            "runner_image": os.environ.get("ImageOS"),
+            "runner_image_version": os.environ.get("ImageVersion"),
         },
     }
 
